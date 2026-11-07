@@ -213,6 +213,8 @@ export const Ringkasan: React.FC = () => {
     jenisPekerjaan: activeTawaran.jenis_pekerjaan,
     skalaUsaha: activeTawaran.skala_usaha,
     masaKerjaKurang1Tahun: activeTawaran.masa_kerja_kurang_1_tahun,
+    hariKerjaPerMinggu:
+      'hari_kerja_per_minggu' in activeTawaran ? activeTawaran.hari_kerja_per_minggu : undefined,
   });
   const selisih = calc.selisih;
   const formatSelisih = (diff: number) => {

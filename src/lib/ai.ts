@@ -152,7 +152,11 @@ export async function balasSebagaiHrd(
     throw new Error(result.error?.message ?? 'Permintaan balasan HRD gagal.');
   }
 
-  const content = result.choices?.[0]?.message?.content?.trim();
+  // Buang blok penalaran (<think>…</think>) dan label "HRD:" jika model menyertakannya
+  const content = result.choices?.[0]?.message?.content
+    ?.replace(/<think>[\s\S]*?<\/think>/gi, '')
+    .replace(/^\s*HRD\s*:\s*/i, '')
+    .trim();
   if (!content) {
     throw new Error('API Groq tidak mengembalikan balasan HRD.');
   }
@@ -162,7 +166,9 @@ export async function balasSebagaiHrd(
 
 export async function evaluasiLatihan(
   apiKey: string,
-  messages: PesanLatihan[]
+  messages: PesanLatihan[],
+  lowongan: LowonganData | null = null,
+  tawaran: TawaranData | null = null
 ): Promise<EvaluasiLatihan> {
   if (!apiKey.trim()) {
     throw new Error('Kunci API belum diisi.');
@@ -177,12 +183,12 @@ export async function evaluasiLatihan(
     body: JSON.stringify({
       model: MODEL_ANALISIS_LOWONGAN,
       temperature: 0.2,
-      max_tokens: 400,
+      max_tokens: 600,
       response_format: { type: 'json_object' },
       messages: [
         {
           role: 'system',
-          content: buatPromptEvaluasiLatihan(messages),
+          content: buatPromptEvaluasiLatihan(messages, lowongan, tawaran),
         },
         {
           role: 'user',

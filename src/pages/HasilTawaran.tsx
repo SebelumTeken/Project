@@ -1,40 +1,59 @@
-import React, { useEffect } from 'react';
+import React from 'react';
+import { Navigate } from 'react-router-dom';
 import { AppLayout } from '../components/AppLayout';
 import { Button } from '../components/Button';
 import { TextLink } from '../components/TextLink';
 import { useSession } from '../store/session';
-import { hitungPatokanUpah, UMP_SUMBAR_2026 } from '../lib/upah';
+import {
+  hitungPatokanUpah,
+  LABEL_SATUAN,
+  SUMBER_UMP_SUMBAR_2026,
+  SUMBER_UMSP_SUMBAR_2026,
+  UMSP_SUMBAR_2026,
+} from '../lib/upah';
+import { buatPertanyaanTawaran } from '../lib/pertanyaan';
+import { buatRingkasanAturan } from '../lib/aturan';
 
 export const HasilTawaran: React.FC = () => {
-  const { mode, tawaran, loadDemoData } = useSession();
+  const { tawaran } = useSession();
 
-  useEffect(() => {
-    if (!tawaran) {
-      loadDemoData();
-    }
-  }, [tawaran, loadDemoData]);
+  // Belum ada input tawaran: arahkan ke form, jangan tampilkan data contoh
+  if (!tawaran) {
+    return <Navigate to="/tawaran" replace />;
+  }
 
-  const activeTawaran = tawaran ?? {
-    gaji_bulanan: 2800000,
-    jenis_pekerjaan: 'penuh_waktu' as const,
-    skala_usaha: 'menengah_besar' as const,
-    masa_kerja_kurang_1_tahun: true,
-    nominal_patokan: UMP_SUMBAR_2026,
-    selisih_patokan: 2800000 - UMP_SUMBAR_2026,
-    posisi_patokan: 'di_bawah' as const,
-    pertanyaan: [
-      'Ini gaji masa percobaan?',
-      'Ada tunjangan tetap?',
-      'Kapan gaji ditinjau?',
-    ],
-  };
+  const activeTawaran = tawaran;
 
-  const calculation = hitungPatokanUpah({
+  const input = {
     gajiBulanan: activeTawaran.gaji_bulanan,
     jenisPekerjaan: activeTawaran.jenis_pekerjaan,
     skalaUsaha: activeTawaran.skala_usaha,
     masaKerjaKurang1Tahun: activeTawaran.masa_kerja_kurang_1_tahun,
-  });
+    hariKerjaPerMinggu: activeTawaran.hari_kerja_per_minggu,
+  };
+  const calculation = hitungPatokanUpah(input);
+  const pertanyaan = buatPertanyaanTawaran(input, calculation);
+  const aturan = buatRingkasanAturan(input, calculation);
+  const satuan = LABEL_SATUAN[calculation.satuan];
+
+  const LABEL_JENIS: Record<typeof input.jenisPekerjaan, string> = {
+    penuh_waktu: 'Penuh waktu',
+    paruh_waktu: 'Paruh waktu',
+    magang: 'Magang',
+    harian: 'Harian',
+    tidak_tahu: 'Status belum diketahui',
+  };
+  const LABEL_SKALA: Record<typeof input.skalaUsaha, string> = {
+    menengah_besar: 'Usaha menengah/besar',
+    mikro_kecil: 'Usaha mikro/kecil',
+    tidak_tahu: 'Skala belum diketahui',
+  };
+  const konteks = [
+    activeTawaran.posisi?.trim() || null,
+    LABEL_JENIS[input.jenisPekerjaan],
+    input.jenisPekerjaan === 'harian' ? `${input.hariKerjaPerMinggu ?? 6} hari kerja/minggu` : null,
+    LABEL_SKALA[input.skalaUsaha],
+  ].filter((k): k is string => Boolean(k));
 
   const isBelow = calculation.posisi === 'di_bawah';
   const isAbove = calculation.posisi === 'di_atas';
@@ -58,16 +77,17 @@ export const HasilTawaran: React.FC = () => {
     return 'Rp0';
   };
 
-  const percentage = Math.min(
-    Math.max(
-      Math.round((activeTawaran.gaji_bulanan / calculation.nominalPatokan) * 100),
-      5
-    ),
-    100
-  );
+  // Persentase asli terhadap UMP (boleh di atas 100%)
+  const persen = (activeTawaran.gaji_bulanan / calculation.nominalPatokan) * 100;
+  const persenLabel = persen.toLocaleString('id-ID', { maximumFractionDigits: 1 });
+
+  // Skala bar: sampai UMP, atau sampai nominal tawaran jika lebih besar
+  const skalaMaks = Math.max(activeTawaran.gaji_bulanan, calculation.nominalPatokan);
+  const lebarTawaran = (activeTawaran.gaji_bulanan / skalaMaks) * 100;
+  const posisiUmp = (calculation.nominalPatokan / skalaMaks) * 100;
 
   return (
-    <AppLayout stepText="2 dari 3" isDemo={mode === 'contoh'}>
+    <AppLayout stepText="2 dari 3">
       {/* Sub-Header Context Bar */}
       <div className="w-full bg-background border-b border-divider/20">
         <div className="max-w-[1040px] mx-auto px-4 sm:px-10 h-11 flex items-center justify-between text-sm">
@@ -80,7 +100,7 @@ export const HasilTawaran: React.FC = () => {
               aria-hidden="true"
             />
             <span className="font-normal text-[14px] leading-5 select-none">
-              {mode === 'contoh' ? 'Data contoh' : 'Analisis AI'}
+              UMP Sumbar 2026
             </span>
           </div>
         </div>
@@ -102,9 +122,21 @@ export const HasilTawaran: React.FC = () => {
             </h1>
 
             <p className="mt-2 max-w-[560px] font-normal text-[17px] sm:text-[19px] leading-7 tracking-[-0.095px] text-secondary">
-              Berdasarkan upah minimum Provinsi Sumatera Barat tahun 2026 untuk
-              pekerja penuh waktu dengan masa kerja kurang dari 1 tahun.
+              {calculation.alasan ??
+                `Dibandingkan dengan ${calculation.keteranganPatokan}: ${'Rp' + calculation.nominalPatokan.toLocaleString('id-ID')} ${satuan}.`}
             </p>
+
+            {/* Ringkasan input dari halaman Cek Tawaran */}
+            <ul className="mt-5 flex flex-wrap items-center justify-center gap-2" aria-label="Konteks tawaran">
+              {konteks.map((k) => (
+                <li
+                  key={k}
+                  className="px-3 py-1 bg-surface rounded-full text-[13px] leading-5 text-secondary"
+                >
+                  {k}
+                </li>
+              ))}
+            </ul>
           </section>
 
           {/* Dual Balanced Analytic Panels (Side by Side Grid, 1040px max, 32px gap) */}
@@ -116,16 +148,20 @@ export const HasilTawaran: React.FC = () => {
                   SELISIH NOMINAL
                 </span>
 
-                <div className="flex items-baseline">
+                <div className="flex flex-wrap items-baseline">
                   <span
                     className={`font-semibold text-[34px] sm:text-[46px] leading-[44px] sm:leading-[52px] break-words tracking-[-1.2px] ${positionColorClass}`}
                   >
                     {formatDifference(calculation.selisih)}
                   </span>
+                  <span className="ml-2 text-[14px] text-secondary">{satuan}</span>
                 </div>
 
                 <p className="mt-1 font-normal text-[14px] leading-5 text-secondary">
-                  dari UMP Sumatera Barat 2026
+                  dari {calculation.keteranganPatokan}
+                </p>
+                <p className="mt-0.5 font-normal text-[12px] leading-4 text-secondary">
+                  {SUMBER_UMP_SUMBAR_2026}
                 </p>
 
                 {/* Comparison Rows */}
@@ -137,16 +173,18 @@ export const HasilTawaran: React.FC = () => {
                     </span>
                     <span className="font-semibold text-[17px] sm:text-[20px] leading-7 tracking-[-0.55px] text-text tabular-nums">
                       Rp{activeTawaran.gaji_bulanan.toLocaleString('id-ID')}
+                      <span className="ml-1 text-[13px] font-normal text-secondary">{satuan}</span>
                     </span>
                   </div>
 
                   {/* Row 2: Patokan UMP */}
                   <div className="w-full min-h-11 py-2 px-4 bg-background rounded-2xl flex items-center justify-between gap-3">
                     <span className="font-normal text-[16px] leading-[25px] tracking-[-0.051px] text-secondary">
-                      Patokan UMP
+                      {calculation.wajibUmp ? 'Patokan UMP' : 'Pembanding UMP'}
                     </span>
                     <span className="font-semibold text-[17px] sm:text-[20px] leading-7 tracking-[-0.55px] text-text tabular-nums">
                       Rp{calculation.nominalPatokan.toLocaleString('id-ID')}
+                      <span className="ml-1 text-[13px] font-normal text-secondary">{satuan}</span>
                     </span>
                   </div>
                 </div>
@@ -156,10 +194,10 @@ export const HasilTawaran: React.FC = () => {
               <div className="pt-10">
                 <div className="flex items-center justify-between text-sm mb-1.5">
                   <span className={`font-medium text-[14px] leading-5 ${positionColorClass}`}>
-                    Tawaran ({percentage}%)
+                    Tawaran ({persenLabel}% dari patokan)
                   </span>
                   <span className="font-normal text-[14px] leading-5 text-secondary">
-                    Patokan UMP
+                    {calculation.wajibUmp ? 'Patokan UMP' : 'Pembanding UMP'}
                   </span>
                 </div>
 
@@ -173,13 +211,21 @@ export const HasilTawaran: React.FC = () => {
                         ? 'bg-success'
                         : 'bg-accent'
                     }`}
-                    style={{ width: `${percentage}%` }}
+                    style={{ width: `${lebarTawaran}%` }}
                   />
+                  {/* Penanda posisi UMP jika tawaran melebihi UMP */}
+                  {posisiUmp < 100 && (
+                    <div
+                      className="absolute top-0 bottom-0 w-0.5 bg-text/70"
+                      style={{ left: `${posisiUmp}%` }}
+                      aria-hidden="true"
+                    />
+                  )}
                 </div>
 
                 <div className="mt-1 flex items-center justify-between text-xs text-secondary font-semibold tracking-[0.48px]">
                   <span>Rp0</span>
-                  <span>Rp{calculation.nominalPatokan.toLocaleString('id-ID')}</span>
+                  <span>Rp{skalaMaks.toLocaleString('id-ID')}</span>
                 </div>
               </div>
             </article>
@@ -192,7 +238,7 @@ export const HasilTawaran: React.FC = () => {
                     Tanyakan
                   </h2>
                   <span className="font-semibold text-[12px] leading-4 tracking-[1.2px] uppercase text-secondary">
-                    3 PERTANYAAN
+                    {pertanyaan.length} PERTANYAAN
                   </span>
                 </div>
 
@@ -201,55 +247,26 @@ export const HasilTawaran: React.FC = () => {
                   perekrut sebelum menandatangani surat perjanjian:
                 </p>
 
-                {/* 3 Question Cards */}
+                {/* Pertanyaan disusun dari isi tawaran */}
                 <div className="flex flex-col gap-4">
-                  {/* Card 01 */}
-                  <div className="w-full p-4 bg-background rounded-2xl flex items-start gap-4">
-                    <span className="font-semibold text-[12px] leading-4 tracking-[0.48px] text-warning mt-1 select-none">
-                      01
-                    </span>
-                    <div className="flex flex-col gap-1">
-                      <h3 className="font-medium text-[20px] leading-7 tracking-[-0.55px] text-text">
-                        Ini gaji masa percobaan?
-                      </h3>
-                      <p className="font-normal text-[14px] leading-5 text-secondary">
-                        Pastikan klausul mengatur penyesuaian nominal otomatis ke
-                        taraf reguler setelah probation 3 bulan berakhir.
-                      </p>
+                  {pertanyaan.map((q, i) => (
+                    <div
+                      key={q.judul}
+                      className="w-full p-4 bg-background rounded-2xl flex items-start gap-4"
+                    >
+                      <span className="font-semibold text-[12px] leading-4 tracking-[0.48px] text-warning mt-1 select-none">
+                        {String(i + 1).padStart(2, '0')}
+                      </span>
+                      <div className="flex flex-col gap-1">
+                        <h3 className="font-medium text-[18px] sm:text-[20px] leading-7 tracking-[-0.55px] text-text">
+                          {q.judul}
+                        </h3>
+                        <p className="font-normal text-[14px] leading-5 text-secondary">
+                          {q.penjelasan}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-
-                  {/* Card 02 */}
-                  <div className="w-full p-4 bg-background rounded-2xl flex items-start gap-4">
-                    <span className="font-semibold text-[12px] leading-4 tracking-[0.48px] text-warning mt-1 select-none">
-                      02
-                    </span>
-                    <div className="flex flex-col gap-1">
-                      <h3 className="font-medium text-[20px] leading-7 tracking-[-0.55px] text-text">
-                        Ada tunjangan tetap?
-                      </h3>
-                      <p className="font-normal text-[14px] leading-5 text-secondary">
-                        Undang-Undang mengizinkan gaji pokok 75% dari total upah
-                        jika dilengkapi tunjangan bersifat tetap.
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Card 03 */}
-                  <div className="w-full p-4 bg-background rounded-2xl flex items-start gap-4">
-                    <span className="font-semibold text-[12px] leading-4 tracking-[0.48px] text-warning mt-1 select-none">
-                      03
-                    </span>
-                    <div className="flex flex-col gap-1">
-                      <h3 className="font-medium text-[20px] leading-7 tracking-[-0.55px] text-text">
-                        Kapan gaji ditinjau?
-                      </h3>
-                      <p className="font-normal text-[14px] leading-5 text-secondary">
-                        Tanyakan siklus tahunan evaluasi performa kerja dan
-                        penyesuaian terhadap inflasi atau standar UMP baru.
-                      </p>
-                    </div>
-                  </div>
+                  ))}
                 </div>
               </div>
 
@@ -277,10 +294,50 @@ export const HasilTawaran: React.FC = () => {
             </article>
           </div>
 
+          {/* Aturan yang berlaku untuk kondisi tawaran ini */}
+          <section aria-labelledby="aturan-heading" className="w-full max-w-[760px] mb-12 sm:mb-16">
+            <h2
+              id="aturan-heading"
+              className="font-semibold text-[24px] sm:text-[28px] leading-[34px] tracking-[-0.7px] text-text mb-2"
+            >
+              Aturan yang berlaku
+            </h2>
+            <p className="text-[14px] leading-5 text-secondary mb-5">
+              {calculation.wajibUmp
+                ? 'UMP wajib berlaku untuk tawaran ini. Berikut standar gaji yang perlu kamu cek.'
+                : 'UMP tidak wajib atau belum bisa dipastikan untuk tawaran ini. Berikut aturan yang relevan.'}
+            </p>
+            <ul className="bg-surface rounded-3xl px-5 sm:px-8 py-2">
+              {aturan.map((a, i) => (
+                <li
+                  key={a.judul}
+                  className={`py-4 flex items-start gap-4 ${
+                    i < aturan.length - 1 ? 'border-b border-divider/40' : ''
+                  }`}
+                >
+                  <span className="font-semibold text-[12px] leading-4 tracking-[0.48px] text-secondary mt-1 w-5 shrink-0 select-none">
+                    {String(i + 1).padStart(2, '0')}
+                  </span>
+                  <div>
+                    <p className="font-medium text-[16px] leading-6 text-text">{a.judul}</p>
+                    <p className="mt-0.5 text-[14px] leading-5 text-secondary">{a.isi}</p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+            <p className="mt-3 px-1 text-[12px] leading-4 text-secondary">
+              Ringkasan umum dari UU 6/2023, PP 35/2021, PP 36/2021, PP 7/2021, dan Permenaker 6/2020. Bukan nasihat hukum.
+            </p>
+          </section>
+
           {/* Lower Decision Action Area */}
           <section className="w-full flex flex-col items-center text-center">
             <p className="font-normal text-[14px] leading-5 text-secondary mb-4">
               Patokan awal. Ada pengecualian.
+            </p>
+            <p className="font-normal text-[12px] leading-4 text-secondary mb-6 max-w-[520px]">
+              Dua sektor usaha tertentu memakai UMSP Rp
+              {UMSP_SUMBAR_2026.toLocaleString('id-ID')} ({SUMBER_UMSP_SUMBAR_2026}).
             </p>
 
             <Button to="/latihan" className="!w-[130px] !min-w-[130px] !px-0">
@@ -288,7 +345,7 @@ export const HasilTawaran: React.FC = () => {
             </Button>
 
             <div className="mt-4">
-              <TextLink to="/tawaran" className="text-sm font-normal text-accent-strong">
+              <TextLink to="/tawaran" state={{ ubah: true }} className="text-sm font-normal text-accent-strong">
                 Ubah nominal atau konteks tawaran
               </TextLink>
             </div>

@@ -5,6 +5,7 @@ interface TextLinkProps extends React.AnchorHTMLAttributes<HTMLAnchorElement> {
   to?: string;
   onClick?: () => void;
   showChevron?: boolean;
+  state?: unknown;
 }
 
 export const TextLink: React.FC<TextLinkProps> = ({
@@ -12,6 +13,7 @@ export const TextLink: React.FC<TextLinkProps> = ({
   to,
   onClick,
   showChevron = true,
+  state,
   className = '',
   ...props
 }) => {
@@ -31,7 +33,7 @@ export const TextLink: React.FC<TextLinkProps> = ({
 
   if (to) {
     return (
-      <Link to={to} className={classes}>
+      <Link to={to} state={state} className={classes}>
         {content}
       </Link>
     );

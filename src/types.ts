@@ -32,10 +32,15 @@ export interface LowonganData {
 }
 
 export interface TawaranData {
+  /** Nama posisi (opsional), dipakai untuk latihan negosiasi */
+  posisi?: string | null;
+  /** Nominal sesuai satuan status kerja: per bulan (penuh waktu/magang), per jam (paruh waktu), per hari (harian) */
   gaji_bulanan: number;
   jenis_pekerjaan: 'penuh_waktu' | 'paruh_waktu' | 'magang' | 'harian' | 'tidak_tahu';
   skala_usaha: 'mikro_kecil' | 'menengah_besar' | 'tidak_tahu';
   masa_kerja_kurang_1_tahun: boolean;
+  /** Khusus harian: 6 hari (UMP ÷ 25) atau 5 hari (UMP ÷ 21) per minggu */
+  hari_kerja_per_minggu?: 5 | 6;
   nominal_patokan: number;
   selisih_patokan: number;
   posisi_patokan: 'di_bawah' | 'setara' | 'di_atas' | 'perlu_dicek';

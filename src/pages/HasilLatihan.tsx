@@ -1,37 +1,36 @@
-import React, { useEffect } from 'react';
+import React from 'react';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { AppLayout } from '../components/AppLayout';
 import { Button } from '../components/Button';
 import { TextLink } from '../components/TextLink';
 import { useSession } from '../store/session';
 
-// Demo fallback scores
-const DEMO_EVALUASI = {
-  skor_kejelasan: 4,
-  skor_alasan: 3,
-  skor_kesopanan: 5,
-  total_skor: 12,
-  maksimal_skor: 15,
-  masukan:
-    'Permintaanmu sudah jelas, tetapi tambahkan alasan yang berkaitan dengan tanggung jawab pekerjaan.',
-  contoh_kalimat: 'Sesuai tanggung jawabnya, apakah gaji bisa ditinjau?',
-};
-
 const SUBTEXT =
-  'Evaluasi percakapan simulasi negosiasi berdasarkan kejelasan argumen, alasan objektif, dan kesopanan penyampaian.';
+  'Penilaian berdasarkan kejelasan permintaan, alasan objektif, dan kesopanan penyampaian.';
 
-const SUBTEXT_SUGGESTION =
-  'Menghubungkan kompensasi langsung dengan bobot lingkup kerja membuka ruang evaluasi objektif.';
+function judulSkor(total: number): string {
+  if (total >= 13) return 'Sangat meyakinkan.';
+  if (total >= 10) return 'Awal yang baik.';
+  if (total >= 7) return 'Bisa lebih kuat.';
+  return 'Perlu latihan lagi.';
+}
 
 export const HasilLatihan: React.FC = () => {
-  const { mode, evaluasi, loadDemoData } = useSession();
+  const navigate = useNavigate();
+  const { evaluasi, setEvaluasi, setPesanLatihan } = useSession();
 
-  useEffect(() => {
-    if (!evaluasi) {
-      loadDemoData();
-    }
-  }, [evaluasi, loadDemoData]);
+  // Belum ada evaluasi: kembali ke latihan, jangan tampilkan skor contoh
+  if (!evaluasi) {
+    return <Navigate to="/latihan" replace />;
+  }
 
-  const activeEvaluasi = evaluasi ?? DEMO_EVALUASI;
+  const activeEvaluasi = evaluasi;
+
+  const handleUlangi = () => {
+    setPesanLatihan([]);
+    setEvaluasi(null);
+    navigate('/latihan');
+  };
 
   const scores = [
     { label: 'Kejelasan', value: activeEvaluasi.skor_kejelasan, max: 5 },
@@ -40,7 +39,7 @@ export const HasilLatihan: React.FC = () => {
   ];
 
   return (
-    <AppLayout stepText="3 dari 3" isDemo={mode === 'contoh'}>
+    <AppLayout stepText="3 dari 3">
       {/* Sub-Header Step Context Bar */}
       <div className="w-full bg-background border-b border-divider/20">
         <div className="max-w-[1120px] mx-auto px-4 sm:px-10 h-11 flex items-center gap-1 text-sm">
@@ -64,10 +63,10 @@ export const HasilLatihan: React.FC = () => {
           {/* Centered Headline Section */}
           <section className="w-full max-w-[680px] flex flex-col items-center text-center mb-10 sm:mb-16 gap-3">
             <h1 className="font-semibold text-4xl sm:text-[48px] leading-tight sm:leading-[52px] tracking-[-1.2px] text-text">
-              Awal yang baik.
+              {judulSkor(activeEvaluasi.total_skor)}
             </h1>
             <p className="font-normal text-[17px] leading-[25px] tracking-[-0.051px] text-secondary max-w-[615px]">
-              {SUBTEXT}
+              Total skor {activeEvaluasi.total_skor}/{activeEvaluasi.maksimal_skor}. {SUBTEXT}
             </p>
           </section>
 
@@ -134,13 +133,13 @@ export const HasilLatihan: React.FC = () => {
             </span>
 
             {/* Blockquote suggestion */}
-            <blockquote className="font-medium text-[22px] leading-9 tracking-[-0.22px] text-text text-center">
+            <blockquote className="font-medium text-[18px] sm:text-[22px] leading-8 sm:leading-9 tracking-[-0.22px] text-text text-center">
               &ldquo;{activeEvaluasi.contoh_kalimat}&rdquo;
             </blockquote>
 
             {/* Explanation subtext */}
             <p className="font-normal text-[14px] leading-5 text-secondary text-center max-w-[610px]">
-              {SUBTEXT_SUGGESTION}
+              {activeEvaluasi.masukan}
             </p>
           </section>
 
@@ -150,7 +149,7 @@ export const HasilLatihan: React.FC = () => {
               Ringkasan
             </Button>
 
-            <TextLink to="/latihan">
+            <TextLink onClick={handleUlangi}>
               Ulangi
             </TextLink>
           </div>

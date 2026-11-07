@@ -1,21 +1,21 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AppLayout } from '../components/AppLayout';
+import { Button } from '../components/Button';
 import { TextLink } from '../components/TextLink';
 import { useSession } from '../store/session';
 import { PesanLatihan } from '../types';
 import { balasSebagaiHrd, evaluasiLatihan } from '../lib/ai';
+import {
+  balasHrdAturan,
+  buatKonteksLatihan,
+  buatPembuka,
+  buatSaranArgumen,
+  evaluasiAturan,
+  rupiah,
+} from '../lib/latihan';
 
 const MAX_USER_REPLIES = 6;
-
-const DEMO_HRD_REPLIES = [
-  'Apa alasan kamu?',
-  'Kualifikasi kamu menarik, tetapi anggaran divisi kami saat ini ditetapkan di angka tersebut. Apakah ada kompensasi non-finansial yang bisa dipertimbangkan?',
-  'Kami bisa mengajukan peninjauan ulang performa setelah masa probation 3 bulan. Bagaimana menurutmu?',
-  'Jika beban kerja mencakup akhir pekan, kami dapat menambahkan tunjangan operasional harian. Apakah ini cukup sesuai?',
-  'Ini adalah penawaran batas atas yang dapat kami berikan untuk posisi ini saat ini. Bagaimana keputusanmu?',
-  'Terima kasih telah berdiskusi secara terbuka. Kami akan mempertimbangkan poin-poin yang kamu sampaikan.',
-];
 
 export const Latihan: React.FC = () => {
   const navigate = useNavigate();
@@ -27,33 +27,21 @@ export const Latihan: React.FC = () => {
     pesanLatihan,
     setPesanLatihan,
     setEvaluasi,
-    loadDemoData,
   } = useSession();
 
+  const pakaiAi = mode === 'ai' && apiKey.trim().length > 0;
   const chatBottomRef = useRef<HTMLDivElement>(null);
 
-  // Initialize with initial conversation if empty
+  // Konteks dari Cek Lowongan + Cek Tawaran (null jika tawaran belum diisi)
+  const ctx = useMemo(
+    () => (tawaran ? buatKonteksLatihan(lowongan, tawaran) : null),
+    [lowongan, tawaran]
+  );
+
+  // Lanjutkan percakapan tersimpan, atau mulai dari pembuka berdasarkan tawaran asli
   const [messages, setMessages] = useState<PesanLatihan[]>(() => {
-    if (pesanLatihan && pesanLatihan.length > 0) {
-      return pesanLatihan;
-    }
-    return [
-      {
-        id: 'm1',
-        pengirim: 'hrd',
-        isi: 'Kami menawarkan Rp2.800.000. Bagaimana?',
-      },
-      {
-        id: 'm2',
-        pengirim: 'pengguna',
-        isi: 'Apakah masih bisa dibicarakan?',
-      },
-      {
-        id: 'm3',
-        pengirim: 'hrd',
-        isi: 'Apa alasan kamu?',
-      },
-    ];
+    if (pesanLatihan && pesanLatihan.length > 0) return pesanLatihan;
+    return ctx ? [buatPembuka(ctx)] : [];
   });
 
   const [inputMessage, setInputMessage] = useState<string>('');
@@ -61,25 +49,40 @@ export const Latihan: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [isEvaluating, setIsEvaluating] = useState<boolean>(false);
 
-  // Count how many replies user has sent
   const userRepliesCount = messages.filter((m) => m.pengirim === 'pengguna').length;
   const isLimitReached = userRepliesCount >= MAX_USER_REPLIES;
 
-  const positionTitle =
-    lowongan?.posisi?.toUpperCase() ?? 'ADMIN TOKO ONLINE';
-  const salaryText = tawaran?.gaji_bulanan
-    ? `RP${tawaran.gaji_bulanan.toLocaleString('id-ID')} / BULAN`
-    : 'RP2.800.000 / BULAN';
-
+  // Simpan progres agar tidak hilang saat berpindah halaman
   useEffect(() => {
-    if (!lowongan || !tawaran) {
-      loadDemoData();
-    }
-  }, [lowongan, tawaran, loadDemoData]);
+    if (messages.length > 0) setPesanLatihan(messages);
+  }, [messages, setPesanLatihan]);
 
   useEffect(() => {
     chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isTyping]);
+
+  // Belum mengisi Cek Tawaran: arahkan ke sana, jangan pakai data contoh
+  if (!ctx) {
+    return (
+      <AppLayout stepText="3 dari 3">
+        <div className="w-full flex-1 flex flex-col items-center justify-center text-center px-4 sm:px-10 py-16">
+          <h1 className="font-semibold text-[28px] sm:text-[40px] leading-tight tracking-[-0.8px] text-text">
+            Isi tawaranmu dulu.
+          </h1>
+          <p className="mt-3 max-w-[440px] text-[16px] sm:text-[17px] leading-7 text-secondary">
+            Latihan negosiasi memakai nominal dan konteks dari halaman Cek Tawaran.
+          </p>
+          <div className="mt-8">
+            <Button to="/tawaran">Cek tawaran</Button>
+          </div>
+        </div>
+      </AppLayout>
+    );
+  }
+
+  const positionTitle = ctx.posisi.toUpperCase();
+  const salaryText = `${rupiah(ctx.gaji).toUpperCase()} ${ctx.labelSatuan.toUpperCase()}`;
+  const saranArgumen = buatSaranArgumen(ctx, messages);
 
   const handleSendMessage = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -97,21 +100,13 @@ export const Latihan: React.FC = () => {
     setInputMessage('');
     setErrorMessage('');
 
-    // Check if limit reached with this new message
-    const currentReplies = updated.filter((m) => m.pengirim === 'pengguna').length;
-
-    // Trigger HRD response
     setIsTyping(true);
     try {
-      const hrdReplyText =
-        mode === 'ai'
-          ? await balasSebagaiHrd(apiKey, lowongan, tawaran, updated)
-          : await new Promise<string>((resolve) => {
-              setTimeout(() => {
-                const replyIdx = Math.min(currentReplies, DEMO_HRD_REPLIES.length - 1);
-                resolve(DEMO_HRD_REPLIES[replyIdx]);
-              }, 650);
-            });
+      const hrdReplyText = pakaiAi
+        ? await balasSebagaiHrd(apiKey, lowongan, tawaran, updated)
+        : await new Promise<string>((resolve) => {
+            setTimeout(() => resolve(balasHrdAturan(ctx, updated)), 650);
+          });
 
       const newHrdMsg: PesanLatihan = {
         id: `h-${Date.now()}`,
@@ -132,16 +127,15 @@ export const Latihan: React.FC = () => {
   };
 
   const handleSelesai = async () => {
-    if (isTyping || isEvaluating) return;
+    if (isTyping || isEvaluating || userRepliesCount === 0) return;
 
     setErrorMessage('');
     setPesanLatihan(messages);
 
-    if (mode === 'ai') {
+    if (pakaiAi) {
       setIsEvaluating(true);
-
       try {
-        const hasilEvaluasi = await evaluasiLatihan(apiKey, messages);
+        const hasilEvaluasi = await evaluasiLatihan(apiKey, messages, lowongan, tawaran);
         setEvaluasi(hasilEvaluasi);
         navigate('/latihan/hasil');
       } catch (error) {
@@ -153,15 +147,22 @@ export const Latihan: React.FC = () => {
       } finally {
         setIsEvaluating(false);
       }
-
       return;
     }
 
+    setEvaluasi(evaluasiAturan(ctx, messages));
     navigate('/latihan/hasil');
   };
 
+  const handleMulaiUlang = () => {
+    if (isTyping || isEvaluating) return;
+    setErrorMessage('');
+    setEvaluasi(null);
+    setMessages([buatPembuka(ctx)]);
+  };
+
   return (
-    <AppLayout stepText="3 dari 3" isDemo={mode === 'contoh'}>
+    <AppLayout stepText="3 dari 3">
       {/* Sub-Header Context Bar */}
       <div className="w-full bg-background border-b border-divider/20">
         <div className="max-w-[1120px] mx-auto px-4 sm:px-10 py-3 sm:py-4 flex items-center justify-between gap-3 text-sm">
@@ -219,6 +220,11 @@ export const Latihan: React.FC = () => {
             {/* Subtitle */}
             <p className="max-w-[520px] font-normal text-[14px] leading-5 text-secondary">
               Uji argumen dan cara penyampaianmu sebelum berbicara langsung dengan perekrut.
+            </p>
+            <p className="mt-2 text-[12px] leading-4 text-secondary">
+              {pakaiAi
+                ? 'HRD dijalankan AI berdasarkan tawaranmu.'
+                : 'Mode tanpa AI: balasan HRD mengikuti aturan. Isi kunci API di Pengaturan untuk HRD berbasis AI.'}
             </p>
           </section>
 
@@ -299,10 +305,7 @@ export const Latihan: React.FC = () => {
                 SARAN ARGUMEN
               </span>
               <p className="font-normal text-[14px] leading-[21px] text-text">
-                Gunakan rujukan UMK domisili kerja (Kepgub terkini), beban
-                operasional 6 hari kerja, atau portofolio pengelolaan
-                marketplace serupa untuk menjaga posisi tetap profesional dan
-                terukur.
+                {saranArgumen}
               </p>
             </div>
           </div>
@@ -361,7 +364,7 @@ export const Latihan: React.FC = () => {
               <button
                 type="button"
                 onClick={handleSelesai}
-                disabled={isTyping || isEvaluating}
+                disabled={isTyping || isEvaluating || userRepliesCount === 0}
                 className="inline-flex items-center gap-1 font-medium text-[17px] leading-[22px] tracking-[-0.085px] text-accent hover:text-accent-strong transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-sm disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 <span>{isEvaluating ? 'Menilai...' : 'Selesai'}</span>
@@ -371,8 +374,21 @@ export const Latihan: React.FC = () => {
               </button>
 
               <p className="font-normal text-[14px] leading-5 text-secondary text-center">
-                Maksimal 6 balasan. Latihan dapat diselesaikan kapan saja.
+                {userRepliesCount === 0
+                  ? 'Kirim minimal satu balasan sebelum menyelesaikan latihan.'
+                  : 'Maksimal 6 balasan. Latihan dapat diselesaikan kapan saja.'}
               </p>
+
+              {userRepliesCount > 0 && (
+                <button
+                  type="button"
+                  onClick={handleMulaiUlang}
+                  disabled={isTyping || isEvaluating}
+                  className="text-[14px] leading-5 text-secondary hover:text-text transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-sm disabled:opacity-40"
+                >
+                  Mulai ulang percakapan
+                </button>
+              )}
             </div>
           </div>
         </div>

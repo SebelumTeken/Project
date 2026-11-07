@@ -1,10 +1,19 @@
 [
   {
     "id": "sumbar-2026",
+    "jenis": "UMP",
     "wilayah": "Sumatera Barat",
     "tahun": 2026,
     "nominal": 3182955,
     "sumber": "SK Gubernur Sumbar Nomor 562-851-2025"
+  },
+  {
+    "id": "sumbar-umsp-2026",
+    "jenis": "UMSP",
+    "wilayah": "Sumatera Barat",
+    "tahun": 2026,
+    "nominal": 3214846,
+    "sumber": "SK Gubernur Sumbar Nomor 562-853-2025",
+    "catatan": "Berlaku untuk dua sektor usaha tertentu."
   }
 ]
-

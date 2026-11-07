@@ -1,66 +1,130 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { AppLayout } from '../components/AppLayout';
 import { Button } from '../components/Button';
 import { useSession } from '../store/session';
-import { hitungPatokanUpah } from '../lib/upah';
+import { hitungPatokanUpah, LABEL_SATUAN, satuanUntuk, SatuanUpah } from '../lib/upah';
+import { buatPertanyaanTawaran } from '../lib/pertanyaan';
+
+type Status = 'penuh_waktu' | 'paruh_waktu' | 'harian' | 'magang';
+type Skala = 'menengah_besar' | 'mikro_kecil' | 'tidak_tahu';
+
+const STATUS_OPTIONS: { id: Status; label: string; bantuan: string }[] = [
+  { id: 'penuh_waktu', label: 'Penuh waktu', bantuan: 'Karyawan tetap atau kontrak, sekitar 40 jam per minggu. Isi gaji per bulan.' },
+  { id: 'paruh_waktu', label: 'Paruh waktu', bantuan: 'Kurang dari 35 jam per minggu. Isi upah per jam.' },
+  { id: 'harian', label: 'Harian', bantuan: 'Dibayar per hari kerja. Isi upah per hari.' },
+  { id: 'magang', label: 'Magang', bantuan: 'Program magang. Isi uang saku per bulan.' },
+];
+
+const SKALA_OPTIONS: { id: Skala; label: string }[] = [
+  { id: 'menengah_besar', label: 'Menengah/besar' },
+  { id: 'mikro_kecil', label: 'Mikro/kecil' },
+  { id: 'tidak_tahu', label: 'Tidak tahu' },
+];
+
+const BANTUAN_SKALA: Record<Skala, string> = {
+  menengah_besar: 'Perusahaan menengah atau besar wajib membayar minimal UMP.',
+  mikro_kecil:
+    'Modal ≤ Rp5 miliar atau omzet ≤ Rp15 miliar per tahun, misalnya toko, warung, atau usaha rumahan. Upah boleh berdasarkan kesepakatan.',
+  tidak_tahu: 'Tidak masalah. Hasilnya akan menjelaskan cara memastikannya. Label "UMKM" belum tentu berarti mikro atau kecil.',
+};
+
+const PLACEHOLDER: Record<SatuanUpah, string> = {
+  bulan: 'Rp2.800.000',
+  hari: 'Rp120.000',
+  jam: 'Rp20.000',
+};
+
+/** Peringatan ringan jika angka tampak tidak cocok dengan satuannya. */
+function peringatanNominal(satuan: SatuanUpah, nominal: number): string | null {
+  if (nominal <= 0) return null;
+  if (satuan === 'bulan' && nominal < 500_000) {
+    return 'Angka ini terlihat kecil untuk gaji bulanan. Jika ini upah harian atau per jam, pilih status Harian atau Paruh waktu.';
+  }
+  if (satuan === 'hari' && nominal > 1_500_000) {
+    return 'Angka ini terlihat besar untuk upah harian. Jika ini gaji bulanan, pilih status Penuh waktu.';
+  }
+  if (satuan === 'jam' && nominal > 300_000) {
+    return 'Angka ini terlihat besar untuk upah per jam. Pastikan satuannya benar.';
+  }
+  return null;
+}
+
+const segBtn = (selected: boolean) =>
+  `flex-1 h-10 px-1.5 rounded-full flex items-center justify-center text-center leading-tight transition-all text-[13px] sm:text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
+    selected ? 'bg-background text-text font-semibold shadow-sm' : 'text-secondary hover:text-text'
+  }`;
 
 export const CekTawaran: React.FC = () => {
   const navigate = useNavigate();
-  const { tawaran, setTawaran } = useSession();
+  const location = useLocation();
+  const { lowongan, tawaran, setTawaran, setPesanLatihan, setEvaluasi } = useSession();
 
-  // Initial values from session or default demo
-  const initialSalary = tawaran?.gaji_bulanan ?? 2800000;
-  const [gajiInput, setGajiInput] = useState<string>(
-    `Rp${initialSalary.toLocaleString('id-ID')}`
+  // Isian lama hanya dipakai saat kembali dari hasil lewat "Ubah nominal atau konteks tawaran"
+  const isUbah = (location.state as { ubah?: boolean } | null)?.ubah === true;
+  const lama = isUbah ? tawaran : null;
+
+  const [posisi, setPosisi] = useState<string>(lama?.posisi ?? lowongan?.posisi ?? '');
+  const [status, setStatus] = useState<Status>(
+    lama && lama.jenis_pekerjaan !== 'tidak_tahu' ? (lama.jenis_pekerjaan as Status) : 'penuh_waktu'
   );
-  const [gajiRaw, setGajiRaw] = useState<number>(initialSalary);
+  const [hariKerja, setHariKerja] = useState<5 | 6>(lama?.hari_kerja_per_minggu ?? 6);
+  const [skala, setSkala] = useState<Skala>(lama?.skala_usaha ?? 'menengah_besar');
 
-  const [jenisPekerjaan, setJenisPekerjaan] = useState<
-    'penuh_waktu' | 'paruh_waktu' | 'magang' | 'harian'
-  >(
-    tawaran?.jenis_pekerjaan && tawaran.jenis_pekerjaan !== 'tidak_tahu'
-      ? (tawaran.jenis_pekerjaan as 'penuh_waktu' | 'paruh_waktu' | 'magang' | 'harian')
-      : 'penuh_waktu'
-  );
-
-  const [skalaUsaha, setSkalaUsaha] = useState<
-    'menengah_besar' | 'mikro_kecil' | 'tidak_tahu'
-  >(tawaran?.skala_usaha ?? 'menengah_besar');
-
-  const [masaKerjaKurang1Tahun, setMasaKerjaKurang1Tahun] = useState<boolean>(
-    tawaran?.masa_kerja_kurang_1_tahun ?? true
+  const nominalAwal = lama?.gaji_bulanan ?? 0;
+  const [nominal, setNominal] = useState<number>(nominalAwal);
+  const [nominalInput, setNominalInput] = useState<string>(
+    nominalAwal > 0 ? `Rp${nominalAwal.toLocaleString('id-ID')}` : ''
   );
 
-  const handleSalaryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const rawDigits = e.target.value.replace(/\D/g, '');
-    const num = rawDigits ? parseInt(rawDigits, 10) : 0;
-    setGajiRaw(num);
-    setGajiInput(num > 0 ? `Rp${num.toLocaleString('id-ID')}` : 'Rp');
+  const satuan = satuanUntuk(status);
+  const peringatan = peringatanNominal(satuan, nominal);
+  const bantuanStatus = STATUS_OPTIONS.find((s) => s.id === status)?.bantuan;
+
+  const handleNominalChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const digits = e.target.value.replace(/\D/g, '');
+    const num = digits ? parseInt(digits, 10) : 0;
+    setNominal(num);
+    setNominalInput(num > 0 ? `Rp${num.toLocaleString('id-ID')}` : '');
+  };
+
+  const handleStatusChange = (baru: Status) => {
+    // Satuan berubah (bulan ↔ hari ↔ jam): kosongkan nominal agar tidak salah tafsir
+    if (satuanUntuk(baru) !== satuanUntuk(status)) {
+      setNominal(0);
+      setNominalInput('');
+    }
+    setStatus(baru);
   };
 
   const handleBandingkan = () => {
-    const calculation = hitungPatokanUpah({
-      gajiBulanan: gajiRaw,
-      jenisPekerjaan,
-      skalaUsaha,
-      masaKerjaKurang1Tahun,
-    });
+    if (nominal <= 0) return;
+
+    const input = {
+      gajiBulanan: nominal,
+      jenisPekerjaan: status,
+      skalaUsaha: skala,
+      masaKerjaKurang1Tahun: true, // tawaran kerja baru
+      hariKerjaPerMinggu: hariKerja,
+    };
+    const calculation = hitungPatokanUpah(input);
 
     setTawaran({
-      gaji_bulanan: gajiRaw,
-      jenis_pekerjaan: jenisPekerjaan,
-      skala_usaha: skalaUsaha,
-      masa_kerja_kurang_1_tahun: masaKerjaKurang1Tahun,
+      posisi: posisi.trim() || null,
+      gaji_bulanan: nominal,
+      jenis_pekerjaan: status,
+      skala_usaha: skala,
+      masa_kerja_kurang_1_tahun: true,
+      hari_kerja_per_minggu: hariKerja,
       nominal_patokan: calculation.nominalPatokan,
       selisih_patokan: calculation.selisih,
       posisi_patokan: calculation.posisi,
-      pertanyaan: [
-        'Ini gaji masa percobaan?',
-        'Ada tunjangan tetap?',
-        'Kapan gaji ditinjau?',
-      ],
+      pertanyaan: buatPertanyaanTawaran(input, calculation).map((q) => q.judul),
     });
+
+    // Tawaran berubah: latihan sebelumnya tidak relevan lagi
+    setPesanLatihan([]);
+    setEvaluasi(null);
 
     navigate('/tawaran/hasil');
   };
@@ -69,7 +133,7 @@ export const CekTawaran: React.FC = () => {
     <AppLayout stepText="2 dari 3">
       {/* Sub-Header Step Bar */}
       <div className="w-full bg-background border-b border-divider/20">
-        <div className="max-w-[1120px] mx-auto px-4 sm:px-10 h-13 py-4 flex items-center justify-between text-sm">
+        <div className="max-w-[1120px] mx-auto px-4 sm:px-10 py-4 flex items-center justify-between text-sm">
           <span className="font-normal text-[14px] leading-5 tracking-[-0.35px] text-text select-none">
             Cek Tawaran
           </span>
@@ -77,169 +141,163 @@ export const CekTawaran: React.FC = () => {
             2 dari 3
           </span>
           <span className="font-normal text-[14px] leading-5 text-secondary select-none">
-            Data contoh
+            Sumatera Barat
           </span>
         </div>
       </div>
 
-      {/* Main Form Section */}
-      <div className="w-full flex-1 flex flex-col items-center justify-center px-4 sm:px-10 py-10 sm:py-16 md:py-24">
+      <div className="w-full flex-1 flex flex-col items-center justify-center px-4 sm:px-10 py-10 sm:py-16 md:py-20">
         <div className="w-full max-w-[560px] flex flex-col items-center">
-          {/* Heading 1 (Berapa tawarannya?) */}
-          <h1 className="max-w-[440px] font-semibold text-4xl sm:text-6xl md:text-[72px] leading-tight md:leading-[76px] tracking-[-2.16px] text-text text-center mb-10 sm:mb-16">
+          <h1 className="max-w-[440px] font-semibold text-4xl sm:text-6xl md:text-[72px] leading-tight md:leading-[76px] tracking-[-2.16px] text-text text-center mb-10 sm:mb-14">
             Berapa tawarannya?
           </h1>
 
-          {/* Form Controls Column (560px) */}
           <div className="w-full flex flex-col gap-8">
-            {/* 1. Large Currency Input on #F3F3F5 */}
+            {/* 1. Posisi */}
+            <div className="w-full flex flex-col gap-2.5">
+              <label htmlFor="posisi-input" className="font-semibold text-[14px] leading-5 text-text">
+                Posisi <span className="font-normal text-secondary">(opsional)</span>
+              </label>
+              <input
+                id="posisi-input"
+                type="text"
+                value={posisi}
+                onChange={(e) => setPosisi(e.target.value)}
+                placeholder="Contoh: Admin Toko Online"
+                autoComplete="off"
+                maxLength={80}
+                className="w-full h-12 px-5 bg-surface rounded-full text-[16px] text-text placeholder:text-secondary/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+              />
+              <p className="px-1 text-[13px] leading-5 text-secondary">
+                Dipakai untuk latihan negosiasi. Tidak memengaruhi perhitungan.
+              </p>
+            </div>
+
+            {/* 2. Status kerja */}
+            <div className="w-full flex flex-col gap-2.5">
+              <span id="status-label" className="font-semibold text-[14px] leading-5 text-text">
+                Status kerja
+              </span>
+              <div
+                role="radiogroup"
+                aria-labelledby="status-label"
+                className="w-full p-1.5 bg-surface rounded-[26px] sm:rounded-full grid grid-cols-2 sm:flex sm:h-[52px] items-center gap-1"
+              >
+                {STATUS_OPTIONS.map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    role="radio"
+                    aria-checked={status === item.id}
+                    onClick={() => handleStatusChange(item.id)}
+                    className={segBtn(status === item.id)}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+              <p className="px-1 text-[13px] leading-5 text-secondary">{bantuanStatus}</p>
+            </div>
+
+            {/* 2b. Hari kerja (khusus harian) */}
+            {status === 'harian' && (
+              <div className="w-full flex flex-col gap-2.5">
+                <span id="hari-label" className="font-semibold text-[14px] leading-5 text-text">
+                  Hari kerja per minggu
+                </span>
+                <div
+                  role="radiogroup"
+                  aria-labelledby="hari-label"
+                  className="w-full h-[52px] p-1.5 bg-surface rounded-full flex items-center gap-1"
+                >
+                  {([6, 5] as const).map((h) => (
+                    <button
+                      key={h}
+                      type="button"
+                      role="radio"
+                      aria-checked={hariKerja === h}
+                      onClick={() => setHariKerja(h)}
+                      className={segBtn(hariKerja === h)}
+                    >
+                      {h} hari
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* 3. Nominal */}
             <div className="w-full flex flex-col gap-3">
-              <div className="w-full bg-surface rounded-xl p-8 flex flex-col justify-center">
+              <div className="w-full bg-surface rounded-xl p-6 sm:p-8 flex flex-col justify-center">
                 <label
                   htmlFor="gaji-input"
                   className="font-semibold text-[12px] leading-4 tracking-[1.2px] uppercase text-secondary mb-2 select-none"
                 >
-                  NOMINAL TAWARAN
+                  {status === 'magang' ? 'UANG SAKU' : 'NOMINAL TAWARAN'}
                 </label>
-                <div className="w-full flex items-center">
-                  <input
-                    id="gaji-input"
-                    type="text"
-                    inputMode="numeric"
-                    value={gajiInput}
-                    onChange={handleSalaryChange}
-                    className="w-full bg-transparent font-semibold text-4xl sm:text-[48px] leading-[52px] tracking-[-1.2px] text-text focus:outline-none"
-                    placeholder="Rp0"
-                  />
-                </div>
+                <input
+                  id="gaji-input"
+                  type="text"
+                  inputMode="numeric"
+                  value={nominalInput}
+                  onChange={handleNominalChange}
+                  autoComplete="off"
+                  className="w-full bg-transparent font-semibold text-4xl sm:text-[48px] leading-[52px] tracking-[-1.2px] text-text placeholder:text-secondary/40 focus:outline-none"
+                  placeholder={PLACEHOLDER[satuan]}
+                />
               </div>
 
-              {/* Input Meta Row */}
               <div className="px-1 flex items-center justify-between text-sm">
                 <span className="font-normal text-[14px] leading-5 text-secondary">
-                  per bulan · Sumatera Barat
+                  {LABEL_SATUAN[satuan]} · Sumatera Barat
                 </span>
                 <span className="font-semibold text-[12px] leading-4 tracking-[0.6px] uppercase text-secondary select-none">
                   RUPIAH
                 </span>
               </div>
+              {status !== 'magang' && (
+                <p className="px-1 text-[13px] leading-5 text-secondary">
+                  Isi gaji pokok ditambah tunjangan tetap, sebelum potongan BPJS dan pajak.
+                </p>
+              )}
+              {peringatan && (
+                <p className="px-4 py-2.5 bg-warning/10 text-warning text-[13px] leading-5 rounded-2xl">
+                  {peringatan}
+                </p>
+              )}
             </div>
 
-            {/* 2. Radiogroup: Jenis Pekerjaan */}
+            {/* 4. Skala tempat kerja */}
             <div className="w-full flex flex-col gap-2.5">
-              <label className="font-semibold text-[14px] leading-5 text-text">
-                Jenis
-              </label>
+              <span id="skala-label" className="font-semibold text-[14px] leading-5 text-text">
+                Skala tempat kerja
+              </span>
               <div
                 role="radiogroup"
-                aria-label="Jenis Pekerjaan"
-                className="w-full p-1.5 bg-surface rounded-[26px] sm:rounded-full grid grid-cols-2 sm:flex sm:h-[52px] items-center gap-1"
-              >
-                {[
-                  { id: 'penuh_waktu', label: 'Penuh waktu' },
-                  { id: 'paruh_waktu', label: 'Paruh waktu' },
-                  { id: 'magang', label: 'Magang' },
-                  { id: 'harian', label: 'Harian' },
-                ].map((item) => {
-                  const isSelected = jenisPekerjaan === item.id;
-                  return (
-                    <button
-                      key={item.id}
-                      type="button"
-                      role="radio"
-                      aria-checked={isSelected}
-                      onClick={() =>
-                        setJenisPekerjaan(
-                          item.id as 'penuh_waktu' | 'paruh_waktu' | 'magang' | 'harian'
-                        )
-                      }
-                      className={`flex-1 h-10 px-1.5 rounded-full flex items-center justify-center text-center leading-tight transition-all text-[13px] sm:text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
-                        isSelected
-                          ? 'bg-background text-text font-semibold shadow-sm'
-                          : 'text-secondary hover:text-text'
-                      }`}
-                    >
-                      {item.label}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* 3. Radiogroup: Skala Perusahaan */}
-            <div className="w-full flex flex-col gap-2.5">
-              <label className="font-semibold text-[14px] leading-5 text-text">
-                Perusahaan
-              </label>
-              <div
-                role="radiogroup"
-                aria-label="Skala Perusahaan"
+                aria-labelledby="skala-label"
                 className="w-full min-h-[52px] p-1.5 bg-surface rounded-full flex items-center gap-1"
               >
-                {[
-                  { id: 'menengah_besar', label: 'Menengah/besar' },
-                  { id: 'mikro_kecil', label: 'Mikro/kecil' },
-                  { id: 'tidak_tahu', label: 'Tidak tahu' },
-                ].map((item) => {
-                  const isSelected = skalaUsaha === item.id;
-                  return (
-                    <button
-                      key={item.id}
-                      type="button"
-                      role="radio"
-                      aria-checked={isSelected}
-                      onClick={() =>
-                        setSkalaUsaha(
-                          item.id as 'menengah_besar' | 'mikro_kecil' | 'tidak_tahu'
-                        )
-                      }
-                      className={`flex-1 h-10 px-1.5 rounded-full flex items-center justify-center text-center leading-tight transition-all text-[13px] sm:text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
-                        isSelected
-                          ? 'bg-background text-text font-semibold shadow-sm'
-                          : 'text-secondary hover:text-text'
-                      }`}
-                    >
-                      {item.label}
-                    </button>
-                  );
-                })}
+                {SKALA_OPTIONS.map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    role="radio"
+                    aria-checked={skala === item.id}
+                    onClick={() => setSkala(item.id)}
+                    className={segBtn(skala === item.id)}
+                  >
+                    {item.label}
+                  </button>
+                ))}
               </div>
+              <p className="px-1 text-[13px] leading-5 text-secondary">{BANTUAN_SKALA[skala]}</p>
             </div>
 
-            {/* 4. Switch Row: Kurang dari 1 tahun */}
-            <div className="w-full pt-2 flex items-center justify-between">
-              <div className="flex flex-col">
-                <span className="font-normal text-[17px] leading-[25px] tracking-[-0.051px] text-text">
-                  Kurang dari 1 tahun
-                </span>
-                <span className="font-normal text-[14px] leading-5 text-secondary">
-                  Masa kerja pelamar di posisi ini
-                </span>
-              </div>
-
-              {/* Toggle switch 56px x 32px */}
-              <button
-                type="button"
-                role="switch"
-                aria-checked={masaKerjaKurang1Tahun}
-                onClick={() => setMasaKerjaKurang1Tahun(!masaKerjaKurang1Tahun)}
-                className={`w-14 h-8 rounded-full p-1 transition-colors flex items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-accent ${
-                  masaKerjaKurang1Tahun ? 'bg-accent' : 'bg-divider'
-                }`}
-              >
-                <div
-                  className={`w-6 h-6 rounded-full bg-background transition-transform duration-200 ease-in-out ${
-                    masaKerjaKurang1Tahun ? 'translate-x-6' : 'translate-x-0'
-                  }`}
-                />
-              </button>
-            </div>
-
-            {/* 5. Action Button & Security note */}
-            <div className="w-full pt-12 flex flex-col items-center gap-4">
+            {/* 5. Aksi */}
+            <div className="w-full pt-8 flex flex-col items-center gap-4">
               <Button
                 onClick={handleBandingkan}
-                disabled={gajiRaw <= 0}
+                disabled={nominal <= 0}
                 className="w-full sm:!w-[200px] sm:!min-w-[200px] !px-0"
               >
                 Bandingkan
