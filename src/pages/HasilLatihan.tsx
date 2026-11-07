@@ -59,12 +59,12 @@ export const HasilLatihan: React.FC = () => {
       </div>
 
       {/* Main Content */}
-      <div className="w-full flex-1 flex flex-col items-center px-4 sm:px-10 py-16 md:py-20 bg-[#F9F9FB]">
+      <div className="w-full flex-1 flex flex-col items-center px-4 sm:px-10 py-10 sm:py-16 md:py-20 bg-[#F9F9FB]">
         <div className="w-full max-w-[1120px] flex flex-col items-center">
 
           {/* Centered Headline Section */}
-          <section className="w-full max-w-[680px] flex flex-col items-center text-center mb-16 gap-3">
-            <h1 className="font-semibold text-[48px] leading-[52px] tracking-[-1.2px] text-text">
+          <section className="w-full max-w-[680px] flex flex-col items-center text-center mb-10 sm:mb-16 gap-3">
+            <h1 className="font-semibold text-4xl sm:text-[48px] leading-tight sm:leading-[52px] tracking-[-1.2px] text-text">
               Awal yang baik.
             </h1>
             <p className="font-normal text-[17px] leading-[25px] tracking-[-0.051px] text-secondary max-w-[615px]">
@@ -73,35 +73,35 @@ export const HasilLatihan: React.FC = () => {
           </section>
 
           {/* Score Panel */}
-          <div className="w-full max-w-[760px] mb-20">
+          <div className="w-full max-w-[760px] mb-12 sm:mb-20">
             <div
-              className="w-full bg-surface rounded-[32px] px-12 py-10"
+              className="w-full bg-surface rounded-[24px] sm:rounded-[32px] px-2 py-6 sm:px-12 sm:py-10"
               role="region"
               aria-label="Skor latihan"
             >
               {/* Three scores side-by-side */}
               <div className="flex items-stretch justify-around w-full">
                 {/* Score 1: Kejelasan */}
-                <div className="flex flex-col items-center px-2">
-                  <span className="font-semibold text-[48px] leading-[52px] tracking-[-1.2px] text-text tabular-nums">
+                <div className="flex flex-col flex-1 items-center px-1 sm:px-2">
+                  <span className="font-semibold text-[30px] sm:text-[48px] leading-[36px] sm:leading-[52px] tracking-[-1px] sm:tracking-[-1.2px] text-text tabular-nums">
                     {scores[0].value}/{scores[0].max}
                   </span>
-                  <span className="mt-2 font-medium text-[14px] leading-5 text-secondary text-center">
+                  <span className="mt-1 sm:mt-2 font-medium text-[12px] sm:text-[14px] leading-5 text-secondary text-center">
                     {scores[0].label}
                   </span>
                 </div>
 
                 {/* Divider + Score 2: Alasan (middle) */}
-                <div className="relative flex flex-col items-center px-2">
+                <div className="relative flex flex-col flex-1 items-center px-1 sm:px-2">
                   {/* Left vertical divider */}
                   <div
                     className="absolute left-0 top-1/2 -translate-y-1/2 w-px h-10 bg-[#E2E2E4]"
                     aria-hidden="true"
                   />
-                  <span className="font-semibold text-[48px] leading-[52px] tracking-[-1.2px] text-text tabular-nums">
+                  <span className="font-semibold text-[30px] sm:text-[48px] leading-[36px] sm:leading-[52px] tracking-[-1px] sm:tracking-[-1.2px] text-text tabular-nums">
                     {scores[1].value}/{scores[1].max}
                   </span>
-                  <span className="mt-2 font-medium text-[14px] leading-5 text-secondary text-center">
+                  <span className="mt-1 sm:mt-2 font-medium text-[12px] sm:text-[14px] leading-5 text-secondary text-center">
                     {scores[1].label}
                   </span>
                   {/* Right vertical divider */}
@@ -112,11 +112,11 @@ export const HasilLatihan: React.FC = () => {
                 </div>
 
                 {/* Score 3: Kesopanan */}
-                <div className="flex flex-col items-center px-2">
-                  <span className="font-semibold text-[48px] leading-[52px] tracking-[-1.2px] text-text tabular-nums">
+                <div className="flex flex-col flex-1 items-center px-1 sm:px-2">
+                  <span className="font-semibold text-[30px] sm:text-[48px] leading-[36px] sm:leading-[52px] tracking-[-1px] sm:tracking-[-1.2px] text-text tabular-nums">
                     {scores[2].value}/{scores[2].max}
                   </span>
-                  <span className="mt-2 font-medium text-[14px] leading-5 text-secondary text-center">
+                  <span className="mt-1 sm:mt-2 font-medium text-[12px] sm:text-[14px] leading-5 text-secondary text-center">
                     {scores[2].label}
                   </span>
                 </div>
@@ -126,7 +126,7 @@ export const HasilLatihan: React.FC = () => {
 
           {/* Recommendation Section */}
           <section
-            className="w-full max-w-[610px] flex flex-col items-center text-center gap-3 mb-20"
+            className="w-full max-w-[610px] flex flex-col items-center text-center gap-3 mb-12 sm:mb-20"
             aria-label="Saran kalimat negosiasi"
           >
             {/* Label */}
@@ -146,7 +146,7 @@ export const HasilLatihan: React.FC = () => {
           </section>
 
           {/* Primary Actions */}
-          <div className="flex flex-row items-center justify-center gap-6">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6">
             <Button to="/ringkasan" variant="primary" className="px-8 h-12">
               Ringkasan
             </Button>

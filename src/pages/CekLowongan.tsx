@@ -144,7 +144,7 @@ export const CekLowongan: React.FC = () => {
       <div className="w-full flex-1 flex flex-col items-center px-4 sm:px-10 pt-10 pb-24">
         <div className="w-full max-w-[1040px] flex flex-col items-center">
           {/* Headline (72px desktop / responsive) */}
-          <section className="w-full text-center mb-16">
+          <section className="w-full text-center mb-8 sm:mb-16">
             <h1 className="font-semibold text-4xl sm:text-6xl md:text-[72px] leading-tight md:leading-[76px] tracking-[-1.8px] text-text">
               Unggah lowongannya.
             </h1>
@@ -154,7 +154,7 @@ export const CekLowongan: React.FC = () => {
           <div className="w-full max-w-[760px] flex flex-col items-center">
             {/* Upload Panel */}
             <div
-              className={`w-full h-[380px] min-h-[380px] bg-surface rounded-[32px] flex flex-col items-center justify-center p-8 sm:px-12 text-center transition-all border-2 border-dashed ${
+              className={`w-full h-[280px] sm:h-[380px] bg-surface rounded-[24px] sm:rounded-[32px] flex flex-col items-center justify-center p-6 sm:p-8 sm:px-12 text-center transition-all border-2 border-dashed ${
                 isDragging
                   ? 'border-accent bg-surface/70 scale-[0.99]'
                   : 'border-transparent'
@@ -218,10 +218,10 @@ export const CekLowongan: React.FC = () => {
             )}
 
             {/* Row below panel (File preview row & Pakai contoh link) */}
-            <div className="w-full min-h-[52px] pt-6 px-1 flex flex-row items-center justify-between gap-4">
+            <div className="w-full min-h-[52px] pt-6 px-1 flex flex-row flex-wrap items-center justify-between gap-x-4 gap-y-3">
               {/* Selected File Row */}
               {selectedFile && !errorTooLarge ? (
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 min-w-0">
                   {/* Thumbnail */}
                   <div className="w-7 h-7 bg-[#EEEEF0] rounded-2xl overflow-hidden flex items-center justify-center shrink-0">
                     {selectedFile.previewUrl.startsWith('data:image/svg') ? (
@@ -244,7 +244,7 @@ export const CekLowongan: React.FC = () => {
 
                   {/* Metadata */}
                   <div className="flex items-center gap-2 overflow-hidden">
-                    <span className="font-medium text-[14px] leading-5 tracking-[-0.35px] text-text truncate max-w-[160px] sm:max-w-[240px]">
+                    <span className="font-medium text-[14px] leading-5 tracking-[-0.35px] text-text truncate max-w-[120px] sm:max-w-[240px]">
                       {selectedFile.name}
                     </span>
                     <span className="font-semibold text-[12px] leading-4 text-secondary">
@@ -297,11 +297,11 @@ export const CekLowongan: React.FC = () => {
             </div>
 
             {/* Bottom Action Area (Button Periksa + Note) */}
-            <div className="w-full pt-16 flex flex-col items-center gap-4">
+            <div className="w-full pt-10 sm:pt-16 flex flex-col items-center gap-4">
               <Button
                 onClick={handlePeriksa}
                 disabled={!selectedFile || errorTooLarge}
-                className="!w-[200px] !min-w-[200px] !px-0"
+                className="w-full sm:!w-[200px] sm:!min-w-[200px] !px-0"
               >
                 Periksa
               </Button>

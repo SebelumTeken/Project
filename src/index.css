@@ -6,6 +6,13 @@
   body {
     @apply bg-background text-text font-sans;
     font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+    /* Cegah scroll horizontal di HP tanpa merusak header sticky */
+    overflow-x: clip;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  img {
+    max-width: 100%;
   }
 }
 
