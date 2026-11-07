@@ -13,6 +13,7 @@ import {
 } from '../lib/upah';
 import { buatPertanyaanTawaran } from '../lib/pertanyaan';
 import { buatRingkasanAturan } from '../lib/aturan';
+import { bandingkanDenganRataRata, formatRupiahPasar, PERIODE_DATA_SEKTOR } from '../lib/upahSektor';
 
 export const HasilTawaran: React.FC = () => {
   const { tawaran } = useSession();
@@ -35,6 +36,11 @@ export const HasilTawaran: React.FC = () => {
   const pertanyaan = buatPertanyaanTawaran(input, calculation);
   const aturan = buatRingkasanAturan(input, calculation);
   const satuan = LABEL_SATUAN[calculation.satuan];
+  const pasar = bandingkanDenganRataRata(
+    activeTawaran.gaji_bulanan,
+    activeTawaran.sektor_usaha,
+    activeTawaran.jenis_pekerjaan
+  );
 
   const LABEL_JENIS: Record<typeof input.jenisPekerjaan, string> = {
     penuh_waktu: 'Penuh waktu',
@@ -293,6 +299,37 @@ export const HasilTawaran: React.FC = () => {
               </div>
             </article>
           </div>
+
+          {/* Gambaran pasar BPS: konteks, bukan patokan. Hanya untuk penuh waktu. */}
+          {pasar && (
+            <section aria-labelledby="pasar-heading" className="w-full max-w-[760px] mb-12 sm:mb-16">
+              <h2
+                id="pasar-heading"
+                className="font-semibold text-[24px] sm:text-[28px] leading-[34px] tracking-[-0.7px] text-text mb-2"
+              >
+                Gambaran pasar (bukan patokan)
+              </h2>
+              <div className="bg-surface rounded-3xl px-5 sm:px-8 py-6 flex flex-col gap-2">
+                <p className="font-medium text-[16px] leading-6 text-text">
+                  Rata-rata nasional bidang {pasar.sektor.label}: {formatRupiahPasar(pasar.rataNasionalSektor)}
+                </p>
+                <p className="text-[14px] leading-5 text-secondary">
+                  Tawaran kamu {pasar.persenDariRataNasional}% dari rata-rata itu.
+                </p>
+                <p className="text-[14px] leading-5 text-secondary">
+                  Rata-rata semua bidang di Sumatera Barat: {formatRupiahPasar(pasar.rataSumbarSemuaSektor)}
+                </p>
+                {pasar.catatan.map((c) => (
+                  <p key={c} className="text-[13px] leading-5 text-secondary">
+                    {c}
+                  </p>
+                ))}
+              </div>
+              <p className="mt-3 px-1 text-[12px] leading-4 text-secondary">
+                Sumber: BPS, Sakernas {PERIODE_DATA_SEKTOR}.
+              </p>
+            </section>
+          )}
 
           {/* Aturan yang berlaku untuk kondisi tawaran ini */}
           <section aria-labelledby="aturan-heading" className="w-full max-w-[760px] mb-12 sm:mb-16">

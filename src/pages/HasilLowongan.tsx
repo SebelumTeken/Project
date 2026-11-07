@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { AppLayout } from '../components/AppLayout';
 import { Button } from '../components/Button';
 import { TextLink } from '../components/TextLink';
@@ -15,6 +15,27 @@ const SARAN_VERIFIKASI: Record<string, string> = Object.fromEntries(
 export const HasilLowongan: React.FC = () => {
   const { mode, lowongan, lengkapiDataContoh } = useSession();
   const [showGuideModal, setShowGuideModal] = useState<boolean>(false);
+  // Pratinjau poster: perbesar, gagal dimuat, dan buka/tutup teks hasil baca
+  const [posterBesar, setPosterBesar] = useState<boolean>(false);
+  const [posterGagal, setPosterGagal] = useState<boolean>(false);
+  const [teksDibuka, setTeksDibuka] = useState<boolean | null>(null);
+  const tombolPerbesarRef = useRef<HTMLButtonElement>(null);
+  const tombolTutupPosterRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!posterBesar) return;
+    tombolTutupPosterRef.current?.focus();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') tutupPosterBesar();
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [posterBesar]);
+
+  const tutupPosterBesar = () => {
+    setPosterBesar(false);
+    tombolPerbesarRef.current?.focus();
+  };
 
   useEffect(() => {
     // Hanya Mode Contoh yang boleh memakai data contoh saat data kosong.
@@ -40,6 +61,11 @@ export const HasilLowongan: React.FC = () => {
   const activeLowongan = lowongan;
   const isHasilAi = activeLowongan.sumber === 'ai';
   const findings = activeLowongan.temuan ?? [];
+  const gambarPoster = !posterGagal ? activeLowongan.gambar_data : undefined;
+  // Jika poster tampil, teks hasil baca dilipat; jika tidak ada poster, teks langsung terbuka.
+  const teksTerbuka = teksDibuka ?? !gambarPoster;
+
+  const warnaNomor = (bobot: TemuanItem['bobot']) => (bobot === 'tinggi' ? 'bg-danger' : 'bg-warning');
 
   // Level determination: any 'tinggi' = Tinggi, else any 'sedang' = Sedang, else Rendah
   const hasTinggi = findings.some((t) => t.bobot === 'tinggi');
@@ -62,10 +88,11 @@ export const HasilLowongan: React.FC = () => {
       end: number;
       bobot: 'tinggi' | 'sedang';
       text: string;
+      nomor: number;
     };
     const matches: MatchRange[] = [];
 
-    temuanList.forEach((item) => {
+    temuanList.forEach((item, nomorIndex) => {
       if (!item.kutipan) return;
       const idx = fullText.toLowerCase().indexOf(item.kutipan.toLowerCase());
       if (idx !== -1) {
@@ -74,6 +101,7 @@ export const HasilLowongan: React.FC = () => {
           end: idx + item.kutipan.length,
           bobot: item.bobot,
           text: fullText.substring(idx, idx + item.kutipan.length),
+          nomor: nomorIndex + 1,
         });
       }
     });
@@ -99,8 +127,16 @@ export const HasilLowongan: React.FC = () => {
           : 'underline decoration-warning decoration-2 underline-offset-4';
 
       parts.push(
-        <span key={i} className={underlineClass}>
-          {m.text}
+        <span key={i}>
+          <span className={underlineClass}>{m.text}</span>
+          <span
+            className={`inline-flex items-center justify-center w-[18px] h-[18px] ml-1 align-[0.35em] rounded-full text-[11px] leading-none font-semibold text-white ${warnaNomor(
+              m.bobot
+            )}`}
+            aria-label={`temuan ${m.nomor}`}
+          >
+            {m.nomor}
+          </span>
         </span>
       );
       lastIndex = m.end;
@@ -158,13 +194,95 @@ export const HasilLowongan: React.FC = () => {
             <article className="w-full md:min-h-[346px] p-6 sm:p-10 bg-surface rounded-[24px] sm:rounded-[32px] flex flex-col justify-between">
               <div>
                 <h2 className="font-semibold text-[12px] leading-4 tracking-[0.6px] uppercase text-secondary mb-6">
-                  TEKS POSTER
+                  {gambarPoster ? 'POSTER' : 'TEKS POSTER'}
                 </h2>
-                <p className="font-semibold text-[20px] sm:text-[22px] leading-[34px] sm:leading-[36px] tracking-[-0.22px] text-text whitespace-pre-line break-words">
-                  {activeLowongan.teks_terbaca.trim()
-                    ? renderHighlightedText(activeLowongan.teks_terbaca, findings)
-                    : 'Teks poster tidak terbaca. Coba unggah gambar yang lebih jelas.'}
-                </p>
+
+                {/* Pratinjau poster yang diunggah */}
+                {gambarPoster && (
+                  <div className="mb-6">
+                    <div className="w-full bg-background rounded-2xl overflow-hidden flex items-center justify-center">
+                      <img
+                        src={gambarPoster}
+                        alt={`Poster lowongan${activeLowongan.posisi ? ` ${activeLowongan.posisi}` : ''}`}
+                        onError={() => setPosterGagal(true)}
+                        className="w-full max-h-[420px] object-contain"
+                      />
+                    </div>
+                    <button
+                      ref={tombolPerbesarRef}
+                      type="button"
+                      onClick={() => setPosterBesar(true)}
+                      className="mt-3 inline-flex items-center gap-1.5 text-[14px] leading-5 text-accent-strong hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-sm"
+                    >
+                      <svg
+                        className="w-3.5 h-3.5"
+                        viewBox="0 0 16 16"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        aria-hidden="true"
+                      >
+                        <path d="M9.5 2.5h4v4M6.5 13.5h-4v-4M13.5 2.5l-4.5 4.5M2.5 13.5L7 9" />
+                      </svg>
+                      Perbesar
+                    </button>
+                  </div>
+                )}
+
+                {/* Teks hasil baca: dilipat jika poster tampil */}
+                {gambarPoster && (
+                  <button
+                    type="button"
+                    onClick={() => setTeksDibuka(!teksTerbuka)}
+                    aria-expanded={teksTerbuka}
+                    aria-controls="teks-poster"
+                    className="w-full pt-5 border-t border-divider/30 flex items-start gap-2 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-sm"
+                  >
+                    <svg
+                      className={`w-4 h-4 mt-0.5 shrink-0 text-secondary transition-transform duration-200 ${
+                        teksTerbuka ? 'rotate-90' : ''
+                      }`}
+                      viewBox="0 0 16 16"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.75"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden="true"
+                    >
+                      <path d="M6 4l4 4-4 4" />
+                    </svg>
+                    <span className="flex flex-col">
+                      <span className="font-semibold text-[15px] leading-5 text-text">
+                        {isHasilAi ? 'Teks yang dibaca AI' : 'Teks poster'}
+                      </span>
+                      {findings.length > 0 && (
+                        <span className="text-[13px] leading-5 text-secondary">
+                          Bagian bernomor digarisbawahi
+                        </span>
+                      )}
+                    </span>
+                  </button>
+                )}
+
+                {teksTerbuka && (
+                  <div id="teks-poster" className={gambarPoster ? 'pt-4' : ''}>
+                    <p
+                      className={`font-semibold text-text whitespace-pre-line break-words ${
+                        gambarPoster
+                          ? 'text-[17px] leading-[30px] tracking-[-0.1px]'
+                          : 'text-[20px] sm:text-[22px] leading-[34px] sm:leading-[36px] tracking-[-0.22px]'
+                      }`}
+                    >
+                      {activeLowongan.teks_terbaca.trim()
+                        ? renderHighlightedText(activeLowongan.teks_terbaca, findings)
+                        : 'Teks poster tidak terbaca. Coba unggah gambar yang lebih jelas.'}
+                    </p>
+                  </div>
+                )}
+
                 {activeLowongan.ringkasan && (
                   <p className="mt-6 font-normal text-[15px] leading-[22px] text-secondary">
                     {activeLowongan.ringkasan}
@@ -188,17 +306,17 @@ export const HasilLowongan: React.FC = () => {
 
                 {findings.length > 0 ? (
                   <div className="flex flex-col gap-6">
-                    {findings.map((item) => (
+                    {findings.map((item, i) => (
                       <div key={item.id} className="flex flex-col gap-1">
                         <div className="flex items-center gap-2">
                           <span
-                            className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-                              item.bobot === 'tinggi'
-                                ? 'bg-danger'
-                                : 'bg-warning'
-                            }`}
+                            className={`inline-flex items-center justify-center w-5 h-5 rounded-full shrink-0 text-[11px] leading-none font-semibold text-white ${warnaNomor(
+                              item.bobot
+                            )}`}
                             aria-hidden="true"
-                          />
+                          >
+                            {i + 1}
+                          </span>
                           <h3
                             className={`font-normal text-[19px] leading-7 tracking-[-0.095px] ${
                               item.bobot === 'tinggi'
@@ -209,11 +327,16 @@ export const HasilLowongan: React.FC = () => {
                             {item.judul}
                           </h3>
                         </div>
-                        <p className="pl-3.5 font-normal text-[17px] leading-[25px] tracking-[-0.051px] text-secondary">
+                        {item.kutipan && (
+                          <p className="pl-7 font-medium text-[15px] leading-[22px] text-text break-words">
+                            “{item.kutipan}”
+                          </p>
+                        )}
+                        <p className="pl-7 font-normal text-[17px] leading-[25px] tracking-[-0.051px] text-secondary">
                           {item.penjelasan}
                         </p>
                         {SARAN_VERIFIKASI[item.kode_tanda] && (
-                          <p className="pl-3.5 font-normal text-[14px] leading-5 text-secondary">
+                          <p className="pl-7 font-normal text-[14px] leading-5 text-secondary">
                             Cara cek: {SARAN_VERIFIKASI[item.kode_tanda]}
                           </p>
                         )}
@@ -272,6 +395,43 @@ export const HasilLowongan: React.FC = () => {
           </section>
         </div>
       </div>
+
+      {/* Poster diperbesar */}
+      {posterBesar && gambarPoster && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Poster lowongan diperbesar"
+          onClick={tutupPosterBesar}
+          className="fixed inset-0 z-50 bg-text/80 backdrop-blur-sm flex items-center justify-center p-4 sm:p-10"
+        >
+          <img
+            src={gambarPoster}
+            alt={`Poster lowongan${activeLowongan.posisi ? ` ${activeLowongan.posisi}` : ''}`}
+            onClick={(e) => e.stopPropagation()}
+            className="max-w-full max-h-full object-contain rounded-2xl shadow-xl"
+          />
+          <button
+            ref={tombolTutupPosterRef}
+            type="button"
+            onClick={tutupPosterBesar}
+            aria-label="Tutup"
+            className="absolute top-4 right-4 w-10 h-10 rounded-full bg-background/90 text-text flex items-center justify-center hover:bg-background focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          >
+            <svg
+              className="w-4 h-4"
+              viewBox="0 0 16 16"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.75"
+              strokeLinecap="round"
+              aria-hidden="true"
+            >
+              <path d="M4 4l8 8M12 4l-8 8" />
+            </svg>
+          </button>
+        </div>
+      )}
 
       {/* Simple Information Modal for "Pelajari tanda bahaya" */}
       {showGuideModal && (

@@ -45,6 +45,8 @@ export interface TawaranData {
   masa_kerja_kurang_1_tahun: boolean;
   /** Khusus harian: 6 hari (UMP ÷ 25) atau 5 hari (UMP ÷ 21) per minggu */
   hari_kerja_per_minggu?: 5 | 6;
+  /** Kode bidang usaha dari src/data/upah-sektor.json, atau 'tidak_tahu'. Hanya dipakai untuk penuh waktu. */
+  sektor_usaha?: string;
   nominal_patokan: number;
   selisih_patokan: number;
   posisi_patokan: 'di_bawah' | 'setara' | 'di_atas' | 'perlu_dicek';

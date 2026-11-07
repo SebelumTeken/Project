@@ -1,0 +1,28 @@
+{
+  "periode": "Agustus 2025",
+  "sumber_nasional": "BPS, Rata-Rata Upah/Gaji menurut lapangan usaha (Sakernas Agustus 2025)",
+  "url_nasional": "https://www.bps.go.id/id/statistics-table/2/MTUyMSMy/rata-rata-upah-gaji--rupiah-.html",
+  "rata_nasional": 3331012,
+  "sumber_sumbar": "BPS Sumatera Barat, rata-rata upah pekerja formal (Sakernas Agustus 2025)",
+  "url_sumbar": "https://sumbar.bps.go.id/id/statistics-table/2/Mjg1IzI=/rata-rata-upah-gaji-bersih-sebulan-pekerja-formal-menurut-kabupaten-kota-dan-lapangan-pekerjaan-utama.html",
+  "rata_sumbar": 2911450,
+  "sektor": [
+    { "kode": "A", "label": "Pertanian, perkebunan, perikanan", "contoh": "kebun sawit, peternakan, tambak", "rata_nasional": 2540158 },
+    { "kode": "B", "label": "Pertambangan", "contoh": "tambang batu bara, galian", "rata_nasional": 4983713 },
+    { "kode": "C", "label": "Pabrik atau industri pengolahan", "contoh": "pabrik semen, makanan, kerajinan", "rata_nasional": 3270191 },
+    { "kode": "D", "label": "Listrik dan gas", "contoh": "pembangkit listrik, distribusi gas", "rata_nasional": 5073204 },
+    { "kode": "E", "label": "Air bersih, sampah, limbah", "contoh": "PDAM, pengelolaan sampah", "rata_nasional": 2835286 },
+    { "kode": "F", "label": "Konstruksi", "contoh": "kontraktor, pembangunan gedung dan jalan", "rata_nasional": 3234953 },
+    { "kode": "G", "label": "Toko, distributor, dealer, bengkel", "contoh": "minimarket, toko online, dealer motor", "rata_nasional": 2839730 },
+    { "kode": "H", "label": "Transportasi, ekspedisi, gudang", "contoh": "kurir, travel, logistik", "rata_nasional": 4094527 },
+    { "kode": "I", "label": "Hotel, restoran, kafe", "contoh": "hotel, rumah makan, katering", "rata_nasional": 2547160 },
+    { "kode": "J", "label": "Teknologi, media, telekomunikasi", "contoh": "software house, agensi digital, provider internet", "rata_nasional": 5278706 },
+    { "kode": "K", "label": "Bank, asuransi, pembiayaan", "contoh": "bank, leasing, asuransi, koperasi simpan pinjam", "rata_nasional": 5116552 },
+    { "kode": "L", "label": "Properti", "contoh": "developer perumahan, agen properti", "rata_nasional": 4399016 },
+    { "kode": "MN", "label": "Jasa perusahaan", "contoh": "konsultan, outsourcing, rental, agen perjalanan", "rata_nasional": 4261425 },
+    { "kode": "O", "label": "Instansi pemerintah", "contoh": "dinas, kantor pemerintahan (non-ASN atau honorer)", "rata_nasional": 4427234 },
+    { "kode": "P", "label": "Pendidikan", "contoh": "sekolah, kampus, bimbel", "rata_nasional": 3050755 },
+    { "kode": "Q", "label": "Kesehatan dan sosial", "contoh": "rumah sakit, klinik, panti", "rata_nasional": 3750376 },
+    { "kode": "RSTU", "label": "Jasa lainnya", "contoh": "salon, laundry, hiburan, organisasi", "rata_nasional": 1967707 }
+  ]
+}

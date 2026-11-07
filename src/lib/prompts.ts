@@ -2,6 +2,7 @@ import tandaBahayaData from '../data/tanda-bahaya.json';
 import { LowonganData, PesanLatihan, TawaranData } from '../types';
 import { buatKonteksLatihan, KonteksLatihan, rupiah } from './latihan';
 import { UMP_SUMBAR_2026 } from './upah';
+import { ATURAN_DATA_UPAH, buatKonteksPasarUntukAi } from './upahSektor';
 
 /**
  * Contoh konkret per kode tanda bahaya, supaya AI tahu wujudnya di poster.
@@ -105,7 +106,7 @@ export function buatPromptHrd(
 ): string {
   const ctx = konteksAtauNull(lowongan, tawaran);
   const konteks = ctx
-    ? blokKonteks(ctx)
+    ? [blokKonteks(ctx), ...buatKonteksPasarUntukAi(tawaran)].join('\n')
     : '- Posisi dan nominal tawaran belum diketahui. Tanyakan harapan pelamar.';
   const batasAnggaran = ctx
     ? `Anggaran maksimalmu ${rupiah(ctx.batasNaik)}. Ini rahasia: jangan sebutkan kecuali sebagai tawaran balik terakhir, dan jangan pernah melebihinya.`
@@ -134,6 +135,8 @@ ATURAN PERILAKU:
 7. Jika pelamar kasar, tetap tenang dan ajak kembali berdiskusi secara profesional.
 8. Jika pelamar menyetujui, tutup percakapan dengan menyebut kontrak tertulis akan dikirim untuk ditinjau.
 
+${ATURAN_DATA_UPAH}
+
 FORMAT:
 - Maksimal 3 kalimat, bahasa Indonesia yang sopan dan natural.
 - Hanya teks balasan HRD: tanpa markdown, tanpa daftar, tanpa label "HRD:".
@@ -160,7 +163,9 @@ export function buatPromptEvaluasiLatihan(
     .join('\n');
 
   const ctx = konteksAtauNull(lowongan, tawaran);
-  const konteks = ctx ? blokKonteks(ctx) : '- Konteks tawaran tidak tersedia.';
+  const konteks = ctx
+    ? [blokKonteks(ctx), ...buatKonteksPasarUntukAi(tawaran)].join('\n')
+    : '- Konteks tawaran tidak tersedia.';
 
   return `Kamu menilai latihan negosiasi gaji seorang pelamar kerja di Sumatera Barat.
 
@@ -195,6 +200,8 @@ ATURAN MASUKAN:
 - Jangan memberi masukan umum yang berlaku untuk siapa saja.
 - "contoh_kalimat" adalah satu kalimat negosiasi untuk posisi dan nominal ini, dan wajib menyebut angka rupiah spesifik.
 - Jika pelamar belum mengirim pesan, beri semua skor 1.
+
+${ATURAN_DATA_UPAH}
 
 Kembalikan hanya JSON valid tanpa markdown dengan bentuk:
 {

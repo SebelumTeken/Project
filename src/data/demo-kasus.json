@@ -32,6 +32,7 @@
     "jenis_pekerjaan": "penuh_waktu",
     "skala_usaha": "menengah_besar",
     "masa_kerja_kurang_1_tahun": true,
+    "sektor_usaha": "G",
     "nominal_patokan": 3182955,
     "selisih_patokan": -382955,
     "posisi_patokan": "di_bawah",

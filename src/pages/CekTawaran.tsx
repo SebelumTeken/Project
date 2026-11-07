@@ -5,6 +5,7 @@ import { Button } from '../components/Button';
 import { useSession } from '../store/session';
 import { hitungPatokanUpah, LABEL_SATUAN, satuanUntuk, SatuanUpah } from '../lib/upah';
 import { buatPertanyaanTawaran } from '../lib/pertanyaan';
+import { PilihSektor } from '../components/PilihSektor';
 
 type Status = 'penuh_waktu' | 'paruh_waktu' | 'harian' | 'magang';
 type Skala = 'menengah_besar' | 'mikro_kecil' | 'tidak_tahu';
@@ -70,6 +71,7 @@ export const CekTawaran: React.FC = () => {
   );
   const [hariKerja, setHariKerja] = useState<5 | 6>(lama?.hari_kerja_per_minggu ?? 6);
   const [skala, setSkala] = useState<Skala>(lama?.skala_usaha ?? 'menengah_besar');
+  const [sektor, setSektor] = useState<string>(lama?.sektor_usaha ?? 'tidak_tahu');
 
   const nominalAwal = lama?.gaji_bulanan ?? 0;
   const [nominal, setNominal] = useState<number>(nominalAwal);
@@ -116,6 +118,7 @@ export const CekTawaran: React.FC = () => {
       skala_usaha: skala,
       masa_kerja_kurang_1_tahun: true,
       hari_kerja_per_minggu: hariKerja,
+      sektor_usaha: status === 'penuh_waktu' ? sektor : undefined,
       nominal_patokan: calculation.nominalPatokan,
       selisih_patokan: calculation.selisih,
       posisi_patokan: calculation.posisi,
@@ -292,6 +295,23 @@ export const CekTawaran: React.FC = () => {
               </div>
               <p className="px-1 text-[13px] leading-5 text-secondary">{BANTUAN_SKALA[skala]}</p>
             </div>
+
+            {/* 4b. Bidang usaha (hanya penuh waktu, untuk gambaran pasar BPS) */}
+            {status === 'penuh_waktu' && (
+              <div className="w-full flex flex-col gap-2.5">
+                <label
+                  id="sektor-label"
+                  htmlFor="sektor-input"
+                  className="font-semibold text-[14px] leading-5 text-text"
+                >
+                  Perusahaannya bergerak di bidang apa?
+                </label>
+                <PilihSektor id="sektor-input" labelId="sektor-label" value={sektor} onChange={setSektor} />
+                <p className="px-1 text-[13px] leading-5 text-secondary">
+                  Pilih bidang perusahaan, bukan jabatan kamu. Contoh: admin di bank pilih Bank, asuransi, pembiayaan. Boleh dikosongkan.
+                </p>
+              </div>
+            )}
 
             {/* 5. Aksi */}
             <div className="w-full pt-8 flex flex-col items-center gap-4">
