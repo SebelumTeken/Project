@@ -141,7 +141,7 @@ export const HasilLowongan: React.FC = () => {
       <div className="w-full flex-1 flex flex-col items-center px-4 sm:px-10 pb-24">
         <div className="w-full max-w-[1040px] flex flex-col items-center">
           {/* Centered Attention Level Section */}
-          <section className="w-full text-center pt-16 pb-20 flex flex-col items-center gap-1">
+          <section className="w-full text-center pt-10 pb-12 sm:pt-16 sm:pb-20 flex flex-col items-center gap-1">
             <span className="font-normal text-[14px] leading-5 tracking-[-0.35px] text-secondary">
               Tingkat perhatian
             </span>
@@ -160,9 +160,9 @@ export const HasilLowongan: React.FC = () => {
           </section>
 
           {/* Comparative Panels (Side by Side Grid, 1040px max, 32px gap) */}
-          <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+          <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-8 items-start">
             {/* Left Panel: Teks Poster */}
-            <article className="w-full min-h-[346px] p-8 sm:p-10 bg-surface rounded-[32px] flex flex-col justify-between">
+            <article className="w-full md:min-h-[346px] p-6 sm:p-10 bg-surface rounded-[24px] sm:rounded-[32px] flex flex-col justify-between">
               <div>
                 <h2 className="font-semibold text-[12px] leading-4 tracking-[0.6px] uppercase text-secondary mb-6">
                   TEKS POSTER
@@ -180,7 +180,7 @@ export const HasilLowongan: React.FC = () => {
             </article>
 
             {/* Right Panel: Perlu Diperiksa */}
-            <article className="w-full min-h-[346px] p-8 sm:p-10 bg-surface rounded-[32px] flex flex-col justify-between">
+            <article className="w-full md:min-h-[346px] p-6 sm:p-10 bg-surface rounded-[24px] sm:rounded-[32px] flex flex-col justify-between">
               <div>
                 <h2 className="font-semibold text-[12px] leading-4 tracking-[0.6px] uppercase text-secondary mb-6">
                   PERLU DIPERIKSA
@@ -243,7 +243,7 @@ export const HasilLowongan: React.FC = () => {
             </div>
 
             {/* Sub-links row */}
-            <div className="mt-12 flex items-center justify-center gap-6 text-sm">
+            <div className="mt-12 flex flex-wrap items-center justify-center gap-x-6 gap-y-3 text-sm">
               <TextLink
                 to="/lowongan"
                 showChevron={false}
@@ -273,7 +273,7 @@ export const HasilLowongan: React.FC = () => {
           aria-modal="true"
           className="fixed inset-0 z-50 bg-text/40 backdrop-blur-sm flex items-center justify-center p-4"
         >
-          <div className="w-full max-w-[540px] bg-background rounded-3xl p-8 shadow-xl">
+          <div className="w-full max-w-[540px] bg-background rounded-3xl p-6 sm:p-8 shadow-xl max-h-[90vh] overflow-y-auto">
             <h3 className="font-semibold text-2xl text-text mb-4">
               Tanda Bahaya Lowongan
             </h3>

@@ -116,23 +116,23 @@ export const Latihan: React.FC = () => {
     <AppLayout stepText="3 dari 3" isDemo>
       {/* Sub-Header Context Bar */}
       <div className="w-full bg-background border-b border-divider/20">
-        <div className="max-w-[1120px] mx-auto px-4 sm:px-10 h-13 py-4 flex items-center justify-between text-sm">
-          <div className="flex items-center gap-2">
+        <div className="max-w-[1120px] mx-auto px-4 sm:px-10 py-3 sm:py-4 flex items-center justify-between gap-3 text-sm">
+          <div className="flex items-center gap-2 min-w-0">
             <span className="font-semibold text-[12px] leading-4 tracking-[0.6px] uppercase px-3 py-1 bg-surface rounded-full text-text select-none">
               LATIHAN
             </span>
-            <span className="font-semibold text-[12px] leading-4 tracking-[1.2px] uppercase text-secondary select-none">
+            <span className="font-semibold text-[12px] leading-4 tracking-[1.2px] uppercase text-secondary select-none whitespace-nowrap">
               3 DARI 3
             </span>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3 sm:gap-4 shrink-0">
             {/* Replies counter badge */}
             <div className="flex items-center gap-1.5 px-3 py-1 bg-surface rounded-full text-xs font-semibold">
               <span className="text-accent-strong select-none">
                 {userRepliesCount}/{MAX_USER_REPLIES}
               </span>
-              <span className="text-secondary tracking-[0.48px] uppercase select-none">
+              <span className="hidden sm:inline text-secondary tracking-[0.48px] uppercase select-none">
                 BALASAN
               </span>
             </div>
@@ -197,7 +197,7 @@ export const Latihan: React.FC = () => {
 
                   {/* Message Bubble */}
                   <div
-                    className={`max-w-[560px] py-5 px-8 sm:px-10 text-[17px] leading-7 tracking-[-0.051px] ${
+                    className={`max-w-[88%] sm:max-w-[560px] py-3.5 px-5 sm:py-5 sm:px-10 text-[16px] sm:text-[17px] leading-7 tracking-[-0.051px] ${
                       isHrd
                         ? 'bg-surface text-text rounded-[24px] rounded-bl-[2px]'
                         : 'bg-accent text-background rounded-[24px] rounded-br-[2px] shadow-sm'
@@ -228,7 +228,7 @@ export const Latihan: React.FC = () => {
           </div>
 
           {/* Live Guiding Prompt / Feedback Slate */}
-          <div className="w-full bg-background border border-divider/40 rounded-[32px] p-6 mb-8 flex items-start gap-4 shadow-sm">
+          <div className="w-full bg-background border border-divider/40 rounded-[24px] sm:rounded-[32px] p-4 sm:p-6 mb-6 sm:mb-8 flex items-start gap-3 sm:gap-4 shadow-sm">
             <div className="w-8 h-8 rounded-full bg-surface flex items-center justify-center shrink-0 text-accent-strong">
               <svg
                 className="w-3.5 h-3.5"
@@ -264,7 +264,7 @@ export const Latihan: React.FC = () => {
             {/* Capsule Input */}
             <form
               onSubmit={handleSendMessage}
-              className="w-full h-16 bg-surface rounded-full relative flex items-center pr-2 pl-6"
+              className="w-full h-14 sm:h-16 bg-surface rounded-full relative flex items-center pr-1.5 sm:pr-2 pl-5 sm:pl-6"
             >
               <input
                 type="text"
@@ -276,7 +276,7 @@ export const Latihan: React.FC = () => {
                     ? 'Batas 6 balasan tercapai. Klik Selesai di bawah.'
                     : 'Tulis jawaban...'
                 }
-                className="w-full bg-transparent font-normal text-[17px] leading-[21px] text-text placeholder-secondary focus:outline-none pr-14 disabled:opacity-50"
+                className="w-full bg-transparent font-normal text-[16px] sm:text-[17px] leading-[21px] text-text placeholder-secondary focus:outline-none pr-2 min-w-0 disabled:opacity-50"
               />
 
               <button
@@ -284,7 +284,7 @@ export const Latihan: React.FC = () => {
                 disabled={!inputMessage.trim() || isLimitReached || isTyping}
                 title="Kirim balasan"
                 aria-label="Kirim balasan"
-                className="w-12 h-12 rounded-full bg-accent hover:bg-accent-strong active:bg-accent-strong text-background flex items-center justify-center shrink-0 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-accent disabled:opacity-40 disabled:cursor-not-allowed"
+                className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-accent hover:bg-accent-strong active:bg-accent-strong text-background flex items-center justify-center shrink-0 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-accent disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 <svg
                   className="w-4 h-4 text-background"

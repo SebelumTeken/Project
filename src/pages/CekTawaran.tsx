@@ -83,10 +83,10 @@ export const CekTawaran: React.FC = () => {
       </div>
 
       {/* Main Form Section */}
-      <div className="w-full flex-1 flex flex-col items-center justify-center px-4 sm:px-10 py-16 md:py-24">
+      <div className="w-full flex-1 flex flex-col items-center justify-center px-4 sm:px-10 py-10 sm:py-16 md:py-24">
         <div className="w-full max-w-[560px] flex flex-col items-center">
           {/* Heading 1 (Berapa tawarannya?) */}
-          <h1 className="max-w-[440px] font-semibold text-5xl sm:text-6xl md:text-[72px] leading-tight md:leading-[76px] tracking-[-2.16px] text-text text-center mb-16">
+          <h1 className="max-w-[440px] font-semibold text-4xl sm:text-6xl md:text-[72px] leading-tight md:leading-[76px] tracking-[-2.16px] text-text text-center mb-10 sm:mb-16">
             Berapa tawarannya?
           </h1>
 
@@ -133,7 +133,7 @@ export const CekTawaran: React.FC = () => {
               <div
                 role="radiogroup"
                 aria-label="Jenis Pekerjaan"
-                className="w-full h-[52px] p-1.5 bg-surface rounded-full flex items-center gap-1"
+                className="w-full p-1.5 bg-surface rounded-[26px] sm:rounded-full grid grid-cols-2 sm:flex sm:h-[52px] items-center gap-1"
               >
                 {[
                   { id: 'penuh_waktu', label: 'Penuh waktu' },
@@ -153,7 +153,7 @@ export const CekTawaran: React.FC = () => {
                           item.id as 'penuh_waktu' | 'paruh_waktu' | 'magang' | 'harian'
                         )
                       }
-                      className={`flex-1 h-10 rounded-full flex items-center justify-center transition-all text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
+                      className={`flex-1 h-10 px-1.5 rounded-full flex items-center justify-center text-center leading-tight transition-all text-[13px] sm:text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
                         isSelected
                           ? 'bg-background text-text font-semibold shadow-sm'
                           : 'text-secondary hover:text-text'
@@ -174,7 +174,7 @@ export const CekTawaran: React.FC = () => {
               <div
                 role="radiogroup"
                 aria-label="Skala Perusahaan"
-                className="w-full h-[52px] p-1.5 bg-surface rounded-full flex items-center gap-1"
+                className="w-full min-h-[52px] p-1.5 bg-surface rounded-full flex items-center gap-1"
               >
                 {[
                   { id: 'menengah_besar', label: 'Menengah/besar' },
@@ -193,7 +193,7 @@ export const CekTawaran: React.FC = () => {
                           item.id as 'menengah_besar' | 'mikro_kecil' | 'tidak_tahu'
                         )
                       }
-                      className={`flex-1 h-10 rounded-full flex items-center justify-center transition-all text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
+                      className={`flex-1 h-10 px-1.5 rounded-full flex items-center justify-center text-center leading-tight transition-all text-[13px] sm:text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
                         isSelected
                           ? 'bg-background text-text font-semibold shadow-sm'
                           : 'text-secondary hover:text-text'
@@ -240,7 +240,7 @@ export const CekTawaran: React.FC = () => {
               <Button
                 onClick={handleBandingkan}
                 disabled={gajiRaw <= 0}
-                className="!w-[200px] !min-w-[200px] !px-0"
+                className="w-full sm:!w-[200px] sm:!min-w-[200px] !px-0"
               >
                 Bandingkan
               </Button>
