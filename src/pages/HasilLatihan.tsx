@@ -23,7 +23,7 @@ const SUBTEXT_SUGGESTION =
   'Menghubungkan kompensasi langsung dengan bobot lingkup kerja membuka ruang evaluasi objektif.';
 
 export const HasilLatihan: React.FC = () => {
-  const { evaluasi, loadDemoData } = useSession();
+  const { mode, evaluasi, loadDemoData } = useSession();
 
   useEffect(() => {
     if (!evaluasi) {
@@ -31,7 +31,6 @@ export const HasilLatihan: React.FC = () => {
     }
   }, [evaluasi, loadDemoData]);
 
-  // TODO(ai): replace with real evaluation from AI response
   const activeEvaluasi = evaluasi ?? DEMO_EVALUASI;
 
   const scores = [
@@ -41,7 +40,7 @@ export const HasilLatihan: React.FC = () => {
   ];
 
   return (
-    <AppLayout stepText="3 dari 3" isDemo>
+    <AppLayout stepText="3 dari 3" isDemo={mode === 'contoh'}>
       {/* Sub-Header Step Context Bar */}
       <div className="w-full bg-background border-b border-divider/20">
         <div className="max-w-[1120px] mx-auto px-4 sm:px-10 h-11 flex items-center gap-1 text-sm">
