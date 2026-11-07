@@ -1,0 +1,43 @@
+[
+  {
+    "id": "tb-1",
+    "kode": "gaji_tidak_wajar",
+    "label": "Gaji sangat tinggi tanpa syarat jelas",
+    "bobot": "tinggi",
+    "sumber": "Komdigi & BP2MI",
+    "saran_verifikasi": "Bandingkan dengan standar industri dan tanggung jawab pekerjaan."
+  },
+  {
+    "id": "tb-2",
+    "kode": "biaya_di_awal",
+    "label": "Biaya di awal",
+    "bobot": "tinggi",
+    "sumber": "Komdigi & BP2MI",
+    "saran_verifikasi": "Jangan bayar sebelum perusahaan jelas dan diverifikasi."
+  },
+  {
+    "id": "tb-3",
+    "kode": "pesan_pribadi",
+    "label": "Lewat pesan pribadi",
+    "bobot": "sedang",
+    "sumber": "Jobstreet",
+    "saran_verifikasi": "Cek kanal resmi dan website resmi perusahaan."
+  },
+  {
+    "id": "tb-4",
+    "kode": "data_sensitif",
+    "label": "Permintaan dokumen sensitif terlalu awal",
+    "bobot": "tinggi",
+    "sumber": "Komdigi",
+    "saran_verifikasi": "Jangan serahkan nomor rekening, OTP, atau paspor di awal."
+  },
+  {
+    "id": "tb-5",
+    "kode": "email_gratis",
+    "label": "Alamat kontak tidak resmi",
+    "bobot": "sedang",
+    "sumber": "Jobstreet",
+    "saran_verifikasi": "Verifikasi domain email atau situs resmi perusahaan."
+  }
+]
+

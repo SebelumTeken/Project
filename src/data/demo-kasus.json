@@ -1,0 +1,64 @@
+{
+  "lowongan": {
+    "teks_terbaca": "Dicari Admin Toko Online. Gaji Rp8.000.000. Biaya seragam Rp150.000. Daftar via WhatsApp.",
+    "nama_perusahaan": null,
+    "posisi": "Admin Toko Online",
+    "lokasi": "Padang",
+    "gaji_tertulis": 8000000,
+    "kontak": "WhatsApp",
+    "tingkat_perhatian": "tinggi",
+    "ringkasan": "Lowongan meminta biaya di awal dan proses pendaftaran lewat pesan pribadi.",
+    "temuan": [
+      {
+        "id": "t1",
+        "kode_tanda": "biaya_di_awal",
+        "bobot": "tinggi",
+        "judul": "Biaya di awal",
+        "kutipan": "Biaya seragam Rp150.000",
+        "penjelasan": "Jangan bayar sebelum perusahaan jelas."
+      },
+      {
+        "id": "t2",
+        "kode_tanda": "pesan_pribadi",
+        "bobot": "sedang",
+        "judul": "Lewat pesan pribadi",
+        "kutipan": "Daftar via WhatsApp",
+        "penjelasan": "Cek kanal resmi perusahaan."
+      }
+    ]
+  },
+  "tawaran": {
+    "gaji_bulanan": 2800000,
+    "jenis_pekerjaan": "penuh_waktu",
+    "skala_usaha": "menengah_besar",
+    "masa_kerja_kurang_1_tahun": true,
+    "nominal_patokan": 3182955,
+    "selisih_patokan": -382955,
+    "posisi_patokan": "di_bawah",
+    "pertanyaan": [
+      "Ini gaji masa percobaan?",
+      "Ada tunjangan tetap?",
+      "Kapan gaji ditinjau?"
+    ]
+  },
+  "latihan": {
+    "konteks": "Admin Toko Online · Rp2.800.000",
+    "percakapan_awal": [
+      {
+        "id": "m1",
+        "pengirim": "hrd",
+        "isi": "Kami menawarkan Rp2.800.000. Bagaimana?"
+      }
+    ],
+    "evaluasi": {
+      "skor_kejelasan": 4,
+      "skor_alasan": 3,
+      "skor_kesopanan": 5,
+      "total_skor": 12,
+      "maksimal_skor": 15,
+      "masukan": "Permintaanmu sudah jelas, tetapi tambahkan alasan yang berkaitan dengan tanggung jawab pekerjaan.",
+      "contoh_kalimat": "Sesuai tanggung jawabnya, apakah gaji bisa ditinjau?"
+    }
+  }
+}
+
