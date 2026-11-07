@@ -2,61 +2,44 @@ import React, { useEffect, useState } from 'react';
 import { AppLayout } from '../components/AppLayout';
 import { Button } from '../components/Button';
 import { TextLink } from '../components/TextLink';
+import { BelumAdaData } from '../components/BelumAdaData';
 import { useSession } from '../store/session';
 import { TemuanItem } from '../types';
 
 export const HasilLowongan: React.FC = () => {
-  const { mode, lowongan, loadDemoData } = useSession();
+  const { mode, lowongan, lengkapiDataContoh } = useSession();
   const [showGuideModal, setShowGuideModal] = useState<boolean>(false);
 
   useEffect(() => {
-    // Ensure data exists for UI phase
-    if (!lowongan) {
-      loadDemoData();
+    // Hanya Mode Contoh yang boleh memakai data contoh saat data kosong.
+    if (!lowongan && mode === 'contoh') {
+      lengkapiDataContoh();
     }
-  }, [lowongan, loadDemoData]);
+  }, [lowongan, mode, lengkapiDataContoh]);
 
-  const activeLowongan = lowongan ?? {
-    teks_terbaca:
-      'Dicari Admin Toko Online. Gaji Rp8.000.000. Biaya seragam Rp150.000. Daftar via WhatsApp.',
-    nama_perusahaan: null,
-    posisi: 'Admin Toko Online',
-    lokasi: 'Padang',
-    gaji_tertulis: 8000000,
-    kontak: 'WhatsApp',
-    tingkat_perhatian: 'tinggi' as const,
-    ringkasan:
-      'Lowongan meminta biaya di awal dan proses pendaftaran lewat pesan pribadi.',
-    temuan: [
-      {
-        id: 't1',
-        kode_tanda: 'biaya_di_awal',
-        bobot: 'tinggi' as const,
-        judul: 'Biaya di awal',
-        kutipan: 'Biaya seragam Rp150.000',
-        penjelasan: 'Jangan bayar sebelum perusahaan jelas.',
-      },
-      {
-        id: 't2',
-        kode_tanda: 'pesan_pribadi',
-        bobot: 'sedang' as const,
-        judul: 'Lewat pesan pribadi',
-        kutipan: 'Daftar via WhatsApp',
-        penjelasan: 'Cek kanal resmi perusahaan.',
-      },
-    ],
-  };
+  if (!lowongan) {
+    return (
+      <AppLayout stepText="1 dari 3" isDemo={mode === 'contoh'}>
+        {mode === 'ai' && (
+          <BelumAdaData
+            judul="Belum ada hasil."
+            pesan="Poster belum dianalisis AI. Unggah poster lowongan untuk melihat hasilnya."
+            tombol={{ label: 'Unggah poster', to: '/lowongan' }}
+          />
+        )}
+      </AppLayout>
+    );
+  }
 
+  const activeLowongan = lowongan;
+  const isHasilAi = activeLowongan.sumber === 'ai';
   const findings = activeLowongan.temuan ?? [];
 
-  // Level determination: any 'tinggi' = Tinggi, else any 'sedang' = Sedang, else 'Belum ada tanda bahaya'
+  // Level determination: any 'tinggi' = Tinggi, else any 'sedang' = Sedang, else Rendah
   const hasTinggi = findings.some((t) => t.bobot === 'tinggi');
   const hasSedang = findings.some((t) => t.bobot === 'sedang');
-  const level = hasTinggi
-    ? 'Tinggi'
-    : hasSedang
-    ? 'Sedang'
-    : 'Belum ada tanda bahaya';
+  const level = hasTinggi ? 'Tinggi' : hasSedang ? 'Sedang' : 'Rendah';
+  const kategoriRisiko = Array.from(new Set(findings.map((t) => t.judul))).join(' · ');
 
   const levelColorClass =
     level === 'Tinggi'
@@ -132,7 +115,7 @@ export const HasilLowongan: React.FC = () => {
             1 dari 3
           </span>
           <span className="font-normal text-[14px] leading-5 text-secondary select-none">
-            Data contoh
+            {isHasilAi ? 'Analisis AI' : 'Data contoh'}
           </span>
         </div>
       </div>
@@ -155,7 +138,7 @@ export const HasilLowongan: React.FC = () => {
             <p className="mt-3 font-normal text-[17px] leading-[25px] tracking-[-0.051px] text-secondary">
               {findings.length > 0
                 ? `${findings.length} bagian perlu diperiksa.`
-                : 'Tetap cek kanal resmi perusahaan.'}
+                : 'Belum ditemukan tanda bahaya, tetap lakukan verifikasi.'}
             </p>
           </section>
 
@@ -168,13 +151,20 @@ export const HasilLowongan: React.FC = () => {
                   TEKS POSTER
                 </h2>
                 <p className="font-semibold text-[20px] sm:text-[22px] leading-[34px] sm:leading-[36px] tracking-[-0.22px] text-text">
-                  {renderHighlightedText(activeLowongan.teks_terbaca, findings)}
+                  {activeLowongan.teks_terbaca.trim()
+                    ? renderHighlightedText(activeLowongan.teks_terbaca, findings)
+                    : 'Teks poster tidak terbaca. Coba unggah gambar yang lebih jelas.'}
                 </p>
+                {activeLowongan.ringkasan && (
+                  <p className="mt-6 font-normal text-[15px] leading-[22px] text-secondary">
+                    {activeLowongan.ringkasan}
+                  </p>
+                )}
               </div>
 
               <div className="pt-10 border-t border-divider/30 mt-6">
-                <p className="font-normal text-[14px] leading-5 text-secondary">
-                  Dokumen masukan: Poster_Loker_Admin.jpg
+                <p className="font-normal text-[14px] leading-5 text-secondary break-words">
+                  Dokumen masukan: {activeLowongan.nama_file ?? 'poster contoh'}
                 </p>
               </div>
             </article>
@@ -224,7 +214,9 @@ export const HasilLowongan: React.FC = () => {
 
               <div className="pt-10 border-t border-divider/30 mt-6">
                 <p className="font-normal text-[14px] leading-5 text-secondary">
-                  Kategori risiko: Biaya rekrutmen &amp; Jalur informal
+                  {kategoriRisiko
+                    ? `Kategori risiko: ${kategoriRisiko}`
+                    : 'Belum ada kategori risiko yang cocok.'}
                 </p>
               </div>
             </article>
