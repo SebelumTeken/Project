@@ -7,10 +7,22 @@ import { useSession } from '../store/session';
 import { kecilkanGambar } from '../lib/gambar';
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
+const TIPE_DIDUKUNG = ['image/jpeg', 'image/jpg', 'image/png'];
+const EKSTENSI_DIDUKUNG = /\.(jpe?g|png)$/i;
+
+const PESAN_FORMAT_SALAH = 'Format file tidak didukung. Pilih gambar JPG, JPEG, atau PNG.';
+const PESAN_TERLALU_BESAR = 'Ukuran gambar melebihi 5 MB. Pilih gambar yang lebih kecil.';
+const PESAN_GAMBAR_RUSAK = 'Gambar tidak dapat dibaca. Coba gambar lain.';
+
+function formatDidukung(file: File): boolean {
+  // Sebagian browser tidak mengisi file.type saat drag-and-drop, jadi cek ekstensinya juga.
+  if (file.type) return TIPE_DIDUKUNG.includes(file.type);
+  return EKSTENSI_DIDUKUNG.test(file.name);
+}
 
 export const CekLowongan: React.FC = () => {
   const navigate = useNavigate();
-  const { mode, setLowongan, loadDemoData } = useSession();
+  const { mode, setLowongan, setPosterMenunggu, loadDemoData } = useSession();
 
   const [selectedFile, setSelectedFile] = useState<{
     name: string;
@@ -18,7 +30,8 @@ export const CekLowongan: React.FC = () => {
     previewUrl: string;
     sizeFormatted: string;
   } | null>(null);
-  const [errorTooLarge, setErrorTooLarge] = useState<boolean>(false);
+  const [errorUpload, setErrorUpload] = useState<string | null>(null);
+  const [isPreparing, setIsPreparing] = useState<boolean>(false);
   const [isDragging, setIsDragging] = useState<boolean>(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -31,17 +44,19 @@ export const CekLowongan: React.FC = () => {
   };
 
   const processFile = (file: File) => {
-    if (!file.type.startsWith('image/')) {
-      return;
-    }
-
-    if (file.size > MAX_FILE_SIZE) {
-      setErrorTooLarge(true);
+    if (!formatDidukung(file)) {
+      setErrorUpload(PESAN_FORMAT_SALAH);
       setSelectedFile(null);
       return;
     }
 
-    setErrorTooLarge(false);
+    if (file.size > MAX_FILE_SIZE) {
+      setErrorUpload(PESAN_TERLALU_BESAR);
+      setSelectedFile(null);
+      return;
+    }
+
+    setErrorUpload(null);
     const previewUrl = URL.createObjectURL(file);
     setSelectedFile({
       name: file.name,
@@ -56,6 +71,8 @@ export const CekLowongan: React.FC = () => {
     if (file) {
       processFile(file);
     }
+    // Supaya file yang sama bisa dipilih lagi setelah ditolak.
+    e.target.value = '';
   };
 
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
@@ -78,8 +95,8 @@ export const CekLowongan: React.FC = () => {
   };
 
   const handlePakaiContoh = () => {
-    loadDemoData();
-    setErrorTooLarge(false);
+    loadDemoData(['lowongan']);
+    setErrorUpload(null);
     setSelectedFile({
       name: 'lowongan_admin.png',
       file: null,
@@ -90,23 +107,24 @@ export const CekLowongan: React.FC = () => {
   };
 
   const handlePeriksa = async () => {
-    if (!selectedFile || errorTooLarge) return;
+    if (!selectedFile || errorUpload || isPreparing) return;
 
     if (mode === 'ai' && selectedFile.file) {
-      const gambarData = await kecilkanGambar(selectedFile.file);
-      setLowongan({
-        teks_terbaca: '',
-        nama_perusahaan: null,
-        posisi: null,
-        lokasi: null,
-        gaji_tertulis: null,
-        kontak: null,
-        tingkat_perhatian: 'rendah',
-        ringkasan: '',
-        temuan: [],
-        gambar_data: gambarData,
-      });
-    } else if (selectedFile.name !== 'lowongan_admin.png') {
+      setIsPreparing(true);
+      try {
+        const gambarData = await kecilkanGambar(selectedFile.file);
+        // Hasil lama dikosongkan supaya halaman hasil tidak menampilkan data sebelumnya.
+        setLowongan(null);
+        setPosterMenunggu({ gambarData, namaFile: selectedFile.name });
+      } catch {
+        setErrorUpload(PESAN_GAMBAR_RUSAK);
+        setSelectedFile(null);
+        return;
+      } finally {
+        setIsPreparing(false);
+      }
+    } else if (selectedFile.file) {
+      setPosterMenunggu(null);
       setLowongan({
         teks_terbaca: 'Contoh teks poster lowongan kerja.',
         nama_perusahaan: null,
@@ -118,7 +136,12 @@ export const CekLowongan: React.FC = () => {
         ringkasan: 'Lowongan kerja umum.',
         temuan: [],
         gambar_data: selectedFile.previewUrl,
+        sumber: 'contoh',
+        nama_file: selectedFile.name,
       });
+    } else {
+      // "Pakai contoh": data contoh lowongan sudah dimuat di handlePakaiContoh.
+      setPosterMenunggu(null);
     }
     navigate('/lowongan/memeriksa');
   };
@@ -208,19 +231,29 @@ export const CekLowongan: React.FC = () => {
                   ›
                 </span>
               </button>
+
+              {/* Keterangan format sebelum upload */}
+              <p className="mt-4 font-normal text-[14px] leading-5 text-secondary">
+                Gunakan gambar JPG, JPEG, atau PNG dengan ukuran maksimal 5 MB.
+                <br />
+                File PDF dan dokumen lain tidak didukung.
+              </p>
             </div>
 
-            {/* State: File too large (> 5 MB) */}
-            {errorTooLarge && (
-              <div className="w-full mt-4 p-3 bg-danger/10 text-danger text-sm rounded-2xl text-center">
-                Ukuran gambar melebihi 5 MB. Coba gambar yang lebih kecil (JPG/PNG).
+            {/* State: format tidak didukung, file > 5 MB, atau gambar rusak */}
+            {errorUpload && (
+              <div
+                role="alert"
+                className="w-full mt-4 p-3 bg-danger/10 text-danger text-sm rounded-2xl text-center"
+              >
+                {errorUpload}
               </div>
             )}
 
             {/* Row below panel (File preview row & Pakai contoh link) */}
             <div className="w-full min-h-[52px] pt-6 px-1 flex flex-row flex-wrap items-center justify-between gap-x-4 gap-y-3">
               {/* Selected File Row */}
-              {selectedFile && !errorTooLarge ? (
+              {selectedFile && !errorUpload ? (
                 <div className="flex items-center gap-3 min-w-0">
                   {/* Thumbnail */}
                   <div className="w-7 h-7 bg-[#EEEEF0] rounded-2xl overflow-hidden flex items-center justify-center shrink-0">
@@ -300,10 +333,10 @@ export const CekLowongan: React.FC = () => {
             <div className="w-full pt-10 sm:pt-16 flex flex-col items-center gap-4">
               <Button
                 onClick={handlePeriksa}
-                disabled={!selectedFile || errorTooLarge}
+                disabled={!selectedFile || !!errorUpload || isPreparing}
                 className="w-full sm:!w-[200px] sm:!min-w-[200px] !px-0"
               >
-                Periksa
+                {isPreparing ? 'Menyiapkan…' : 'Periksa'}
               </Button>
 
               <p className="font-normal text-[14px] leading-5 text-secondary text-center">

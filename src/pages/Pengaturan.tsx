@@ -5,7 +5,7 @@ import { useSession } from '../store/session';
 
 export const Pengaturan: React.FC = () => {
   const navigate = useNavigate();
-  const { setMode, apiKey, setApiKey } = useSession();
+  const { mode, setMode, apiKey, setApiKey, resetSession } = useSession();
 
   // Local draft state — only committed on "Simpan"
   const [draftKey, setDraftKey] = useState<string>(apiKey);
@@ -14,7 +14,13 @@ export const Pengaturan: React.FC = () => {
   const handleSimpan = () => {
     // Tanpa pilihan mode: AI dipakai otomatis jika kunci API diisi,
     // jika kosong aplikasi memakai data contoh.
-    setMode(draftKey.trim() ? 'ai' : 'contoh');
+    const modeBaru = draftKey.trim() ? 'ai' : 'contoh';
+    if (modeBaru !== mode) {
+      // Data dari mode sebelumnya dikosongkan supaya data contoh
+      // tidak terbawa ke Mode AI, dan sebaliknya.
+      resetSession();
+    }
+    setMode(modeBaru);
     setApiKey(draftKey);
     // Navigate back after saving
     navigate(-1);

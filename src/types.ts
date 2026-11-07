@@ -29,6 +29,10 @@ export interface LowonganData {
   ringkasan: string;
   temuan: TemuanItem[];
   gambar_data?: string;
+  /** Asal data: 'ai' jika hasil analisis Groq, selain itu dianggap data contoh. */
+  sumber?: 'contoh' | 'ai';
+  /** Nama file poster yang diunggah pengguna. */
+  nama_file?: string;
 }
 
 export interface TawaranData {

@@ -4,97 +4,139 @@ import { AppLayout } from '../components/AppLayout';
 import { Button } from '../components/Button';
 import { TextLink } from '../components/TextLink';
 import { useSession } from '../store/session';
-import { analisisLowongan } from '../lib/ai';
+import { AiDibatalkanError, analisisLowongan, BATAS_WAKTU_MS } from '../lib/ai';
+
+const PESAN_ERROR_UMUM = 'Koneksi ke AI bermasalah.';
+const DETIK_PESAN_LAMBAT = 15;
 
 export const Memeriksa: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { mode, apiKey, lowongan, setLowongan, loadDemoData } = useSession();
-  const sudahDimulai = useRef<boolean>(false);
+  const {
+    mode,
+    setMode,
+    apiKey,
+    lowongan,
+    setLowongan,
+    posterMenunggu,
+    setPosterMenunggu,
+    loadDemoData,
+  } = useSession();
 
   // Failed state can be triggered via query parameter ?failed=1 or error
   const [status, setStatus] = useState<'running' | 'failed'>(
     searchParams.get('failed') === '1' ? 'failed' : 'running'
   );
+  const [pesanError, setPesanError] = useState<string>(PESAN_ERROR_UMUM);
+  const [percobaan, setPercobaan] = useState<number>(0);
+  const [detikBerjalan, setDetikBerjalan] = useState<number>(0);
 
   const [progressStage, setProgressStage] = useState<number>(1); // 1 = membaca teks, 2 = tanda bahaya, 3 = menyiapkan hasil
 
+  // Nilai sesi terbaru dibaca lewat ref supaya proses tidak diulang saat sesi berubah.
+  const sesiRef = useRef({ mode, apiKey, lowongan, posterMenunggu });
+  sesiRef.current = { mode, apiKey, lowongan, posterMenunggu };
+
   useEffect(() => {
-    if (status !== 'running' || sudahDimulai.current) return;
-    sudahDimulai.current = true;
-    let active = true;
+    if (status !== 'running') return;
+
+    let aktif = true;
+    const controller = new AbortController();
     const timers: ReturnType<typeof setTimeout>[] = [];
+    let interval: ReturnType<typeof setInterval> | undefined;
 
-    const jalankanPemeriksaan = async () => {
-      if (mode === 'ai') {
-        if (lowongan && !lowongan.gambar_data) {
-          navigate('/lowongan/hasil');
+    const gagal = (pesan: string) => {
+      if (!aktif) return;
+      setPesanError(pesan);
+      setStatus('failed');
+    };
+
+    const jalankanPemeriksaan = () => {
+      const sesi = sesiRef.current;
+
+      if (sesi.mode === 'ai') {
+        if (!sesi.posterMenunggu) {
+          // Tidak ada poster baru. Jika sudah ada hasil (misalnya dari "Pakai contoh"), tampilkan.
+          if (sesi.lowongan) {
+            navigate('/lowongan/hasil', { replace: true });
+          } else {
+            gagal('Belum ada poster yang diunggah. Unggah poster lowongan dulu.');
+          }
           return;
         }
 
-        if (!apiKey.trim() || !lowongan?.gambar_data) {
-          if (active) setStatus('failed');
+        if (!sesi.apiKey.trim()) {
+          gagal('Kunci API Groq belum diisi. Buka Pengaturan untuk mengisinya.');
           return;
         }
 
-        try {
-          setProgressStage(2);
-          const hasil = await analisisLowongan(apiKey, lowongan.gambar_data);
-          if (!active) return;
-          setProgressStage(3);
-          setLowongan(hasil);
-          navigate('/lowongan/hasil');
-        } catch {
-          if (active) setStatus('failed');
-        }
+        const poster = sesi.posterMenunggu;
+        const mulai = Date.now();
+        setProgressStage(1);
+        setDetikBerjalan(0);
+        interval = setInterval(() => {
+          setDetikBerjalan(Math.floor((Date.now() - mulai) / 1000));
+        }, 1000);
+
+        analisisLowongan(sesi.apiKey, poster.gambarData, { signal: controller.signal })
+          .then((hasil) => {
+            if (!aktif) return;
+            setProgressStage(3);
+            setLowongan({ ...hasil, nama_file: poster.namaFile });
+            setPosterMenunggu(null);
+            navigate('/lowongan/hasil', { replace: true });
+          })
+          .catch((error: unknown) => {
+            if (error instanceof AiDibatalkanError) return;
+            gagal(error instanceof Error ? error.message : PESAN_ERROR_UMUM);
+          })
+          .finally(() => clearInterval(interval));
         return;
       }
 
-      if (!lowongan) {
-        loadDemoData();
+      // Mode Contoh: animasi singkat, lalu tampilkan hasil.
+      if (!sesi.lowongan) {
+        loadDemoData(['lowongan']);
       }
-
-      const t1 = setTimeout(() => {
-        if (active) setProgressStage(2);
-      }, 800);
-      const t2 = setTimeout(() => {
-        if (active) setProgressStage(3);
-      }, 1500);
-      const t3 = setTimeout(() => {
-        if (active) navigate('/lowongan/hasil');
-      }, 2000);
-      timers.push(t1, t2, t3);
+      timers.push(
+        setTimeout(() => aktif && setProgressStage(2), 800),
+        setTimeout(() => aktif && setProgressStage(3), 1500),
+        setTimeout(() => aktif && navigate('/lowongan/hasil', { replace: true }), 2000)
+      );
     };
 
-    void jalankanPemeriksaan();
+    // Ditunda satu tick: React StrictMode (mode dev) memasang efek dua kali,
+    // jadi pemasangan pertama dibatalkan sebelum sempat mengirim permintaan ke Groq.
+    const mulaiTimer = setTimeout(jalankanPemeriksaan, 0);
 
     return () => {
-      active = false;
+      aktif = false;
+      clearTimeout(mulaiTimer);
       timers.forEach((timer) => clearTimeout(timer));
+      clearInterval(interval);
+      controller.abort();
     };
-  }, [
-    apiKey,
-    loadDemoData,
-    lowongan,
-    mode,
-    navigate,
-    setLowongan,
-    status,
-  ]);
+  }, [status, percobaan, navigate, loadDemoData, setLowongan, setPosterMenunggu]);
 
   const handleCobaLagi = () => {
-    sudahDimulai.current = false;
-    setStatus('running');
+    setPesanError(PESAN_ERROR_UMUM);
     setProgressStage(1);
+    setDetikBerjalan(0);
+    setStatus('running');
+    setPercobaan((n) => n + 1);
   };
 
   const handlePakaiContoh = () => {
-    loadDemoData();
+    // Pindah ke Mode Contoh supaya tahap berikutnya juga tidak bergantung pada AI.
+    setMode('contoh');
+    loadDemoData(['lowongan']);
     navigate('/lowongan/hasil');
   };
 
+  const batasDetik = Math.round(BATAS_WAKTU_MS.analisisLowongan / 1000);
+
   return (
-    <AppLayout stepText="1 dari 3">
+    <AppLayout stepText="1 dari 3" isDemo={mode === 'contoh'}>
       {/* Sub-Header Step Bar */}
       <div className="w-full bg-background border-b border-divider/20">
         <div className="max-w-[1040px] mx-auto px-4 sm:px-10 h-11 flex items-center justify-between text-sm">
@@ -140,12 +182,14 @@ export const Memeriksa: React.FC = () => {
                 <span className="font-medium text-[17px] leading-[22px] tracking-[-0.085px] text-text">
                   Membaca teks
                 </span>
-                <span
-                  className="font-semibold text-[15px] leading-[22px] text-success select-none"
-                  aria-hidden="true"
-                >
-                  ✓
-                </span>
+                {progressStage >= 2 && (
+                  <span
+                    className="font-semibold text-[15px] leading-[22px] text-success select-none"
+                    aria-hidden="true"
+                  >
+                    ✓
+                  </span>
+                )}
               </div>
 
               {/* Line 2: Mencocokkan tanda bahaya */}
@@ -157,7 +201,7 @@ export const Memeriksa: React.FC = () => {
                 >
                   Mencocokkan tanda bahaya
                 </span>
-                {progressStage >= 2 && (
+                {progressStage >= 3 && (
                   <span
                     className="font-semibold text-[15px] leading-[22px] text-success select-none"
                     aria-hidden="true"
@@ -176,16 +220,21 @@ export const Memeriksa: React.FC = () => {
                 >
                   Menyiapkan hasil
                 </span>
-                {progressStage >= 3 && (
-                  <span
-                    className="font-semibold text-[15px] leading-[22px] text-success select-none"
-                    aria-hidden="true"
-                  >
-                    ✓
-                  </span>
-                )}
               </div>
             </div>
+
+            {/* Waktu tunggu respons AI */}
+            {mode === 'ai' && (
+              <p className="mt-8 font-normal text-[14px] leading-5 text-secondary" aria-live="polite">
+                Menunggu respons AI · {detikBerjalan} detik
+                {detikBerjalan >= DETIK_PESAN_LAMBAT && (
+                  <>
+                    <br />
+                    Masih diproses. Dihentikan otomatis setelah {batasDetik} detik.
+                  </>
+                )}
+              </p>
+            )}
 
             {/* Link Batal */}
             <div className="mt-16">
@@ -208,14 +257,31 @@ export const Memeriksa: React.FC = () => {
             <h1 className="font-semibold text-4xl sm:text-6xl md:text-[72px] leading-tight md:leading-[76px] tracking-[-2.16px] text-text">
               Belum berhasil.
             </h1>
-            <p className="mt-6 font-normal text-[17px] sm:text-[19px] leading-7 text-secondary">
-              Koneksi ke AI bermasalah.
+            <p
+              className="mt-6 font-normal text-[17px] sm:text-[19px] leading-7 text-secondary"
+              role="alert"
+            >
+              {pesanError}
             </p>
 
             <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6">
-              <Button onClick={handleCobaLagi}>Coba lagi</Button>
-              <TextLink onClick={handlePakaiContoh}>Pakai contoh</TextLink>
+              {posterMenunggu && apiKey.trim() ? (
+                <Button onClick={handleCobaLagi}>Coba lagi</Button>
+              ) : (
+                <Button to={apiKey.trim() ? '/lowongan' : '/pengaturan'}>
+                  {apiKey.trim() ? 'Unggah poster' : 'Buka Pengaturan'}
+                </Button>
+              )}
+              <TextLink onClick={handlePakaiContoh}>Pakai Mode Contoh</TextLink>
             </div>
+
+            {posterMenunggu && (
+              <div className="mt-6">
+                <TextLink to="/lowongan" className="text-sm font-normal text-nav">
+                  Unggah gambar lain
+                </TextLink>
+              </div>
+            )}
           </div>
         )}
       </div>
