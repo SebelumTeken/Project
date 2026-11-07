@@ -1,14 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { AppLayout } from '../components/AppLayout';
 import { Button } from '../components/Button';
 import { TextLink } from '../components/TextLink';
 import { useSession } from '../store/session';
+import { analisisLowongan } from '../lib/ai';
 
 export const Memeriksa: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { lowongan, loadDemoData } = useSession();
+  const { mode, apiKey, lowongan, setLowongan, loadDemoData } = useSession();
+  const sudahDimulai = useRef<boolean>(false);
 
   // Failed state can be triggered via query parameter ?failed=1 or error
   const [status, setStatus] = useState<'running' | 'failed'>(
@@ -18,35 +20,70 @@ export const Memeriksa: React.FC = () => {
   const [progressStage, setProgressStage] = useState<number>(1); // 1 = membaca teks, 2 = tanda bahaya, 3 = menyiapkan hasil
 
   useEffect(() => {
-    if (status !== 'running') return;
+    if (status !== 'running' || sudahDimulai.current) return;
+    sudahDimulai.current = true;
+    let active = true;
+    const timers: ReturnType<typeof setTimeout>[] = [];
 
-    // Ensure demo data is available if not set
-    if (!lowongan) {
-      loadDemoData();
-    }
+    const jalankanPemeriksaan = async () => {
+      if (mode === 'ai') {
+        if (lowongan && !lowongan.gambar_data) {
+          navigate('/lowongan/hasil');
+          return;
+        }
 
-    // TODO(ai): Real AI call will be dispatched here in AI mode.
-    // In UI phase, show progress for 2 seconds using demo data, then navigate to /lowongan/hasil.
-    const t1 = setTimeout(() => {
-      setProgressStage(2);
-    }, 800);
+        if (!apiKey.trim() || !lowongan?.gambar_data) {
+          if (active) setStatus('failed');
+          return;
+        }
 
-    const t2 = setTimeout(() => {
-      setProgressStage(3);
-    }, 1500);
+        try {
+          setProgressStage(2);
+          const hasil = await analisisLowongan(apiKey, lowongan.gambar_data);
+          if (!active) return;
+          setProgressStage(3);
+          setLowongan(hasil);
+          navigate('/lowongan/hasil');
+        } catch {
+          if (active) setStatus('failed');
+        }
+        return;
+      }
 
-    const t3 = setTimeout(() => {
-      navigate('/lowongan/hasil');
-    }, 2000);
+      if (!lowongan) {
+        loadDemoData();
+      }
+
+      const t1 = setTimeout(() => {
+        if (active) setProgressStage(2);
+      }, 800);
+      const t2 = setTimeout(() => {
+        if (active) setProgressStage(3);
+      }, 1500);
+      const t3 = setTimeout(() => {
+        if (active) navigate('/lowongan/hasil');
+      }, 2000);
+      timers.push(t1, t2, t3);
+    };
+
+    void jalankanPemeriksaan();
 
     return () => {
-      clearTimeout(t1);
-      clearTimeout(t2);
-      clearTimeout(t3);
+      active = false;
+      timers.forEach((timer) => clearTimeout(timer));
     };
-  }, [status, lowongan, loadDemoData, navigate]);
+  }, [
+    apiKey,
+    loadDemoData,
+    lowongan,
+    mode,
+    navigate,
+    setLowongan,
+    status,
+  ]);
 
   const handleCobaLagi = () => {
+    sudahDimulai.current = false;
     setStatus('running');
     setProgressStage(1);
   };

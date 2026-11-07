@@ -6,7 +6,7 @@ import { useSession } from '../store/session';
 import { TemuanItem } from '../types';
 
 export const HasilLowongan: React.FC = () => {
-  const { lowongan, loadDemoData } = useSession();
+  const { mode, lowongan, loadDemoData } = useSession();
   const [showGuideModal, setShowGuideModal] = useState<boolean>(false);
 
   useEffect(() => {
@@ -121,7 +121,7 @@ export const HasilLowongan: React.FC = () => {
   };
 
   return (
-    <AppLayout stepText="1 dari 3" isDemo>
+    <AppLayout stepText="1 dari 3" isDemo={mode === 'contoh'}>
       {/* Sub-Header Step Bar */}
       <div className="w-full bg-background border-b border-divider/20">
         <div className="max-w-[1120px] mx-auto px-4 sm:px-10 h-13 py-4 flex items-center justify-between text-sm">

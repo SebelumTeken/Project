@@ -4,15 +4,17 @@ import { AppLayout } from '../components/AppLayout';
 import { Button } from '../components/Button';
 import { TextLink } from '../components/TextLink';
 import { useSession } from '../store/session';
+import { kecilkanGambar } from '../lib/gambar';
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
 
 export const CekLowongan: React.FC = () => {
   const navigate = useNavigate();
-  const { setLowongan, loadDemoData } = useSession();
+  const { mode, setLowongan, loadDemoData } = useSession();
 
   const [selectedFile, setSelectedFile] = useState<{
     name: string;
+    file: File | null;
     previewUrl: string;
     sizeFormatted: string;
   } | null>(null);
@@ -43,6 +45,7 @@ export const CekLowongan: React.FC = () => {
     const previewUrl = URL.createObjectURL(file);
     setSelectedFile({
       name: file.name,
+      file,
       previewUrl,
       sizeFormatted: formatFileSize(file.size),
     });
@@ -79,17 +82,31 @@ export const CekLowongan: React.FC = () => {
     setErrorTooLarge(false);
     setSelectedFile({
       name: 'lowongan_admin.png',
+      file: null,
       previewUrl:
         'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 80 80"><rect width="80" height="80" fill="%23D2D2D7"/><text x="40" y="44" font-family="sans-serif" font-size="10" fill="%235F5E60" text-anchor="middle">Contoh</text></svg>',
       sizeFormatted: '142 KB',
     });
   };
 
-  const handlePeriksa = () => {
+  const handlePeriksa = async () => {
     if (!selectedFile || errorTooLarge) return;
 
-    // TODO(ai): Image analysis API call will be connected here
-    if (selectedFile.name !== 'lowongan_admin.png') {
+    if (mode === 'ai' && selectedFile.file) {
+      const gambarData = await kecilkanGambar(selectedFile.file);
+      setLowongan({
+        teks_terbaca: '',
+        nama_perusahaan: null,
+        posisi: null,
+        lokasi: null,
+        gaji_tertulis: null,
+        kontak: null,
+        tingkat_perhatian: 'rendah',
+        ringkasan: '',
+        temuan: [],
+        gambar_data: gambarData,
+      });
+    } else if (selectedFile.name !== 'lowongan_admin.png') {
       setLowongan({
         teks_terbaca: 'Contoh teks poster lowongan kerja.',
         nama_perusahaan: null,

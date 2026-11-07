@@ -86,5 +86,16 @@ describe('hitungPatokanUpah', () => {
     expect(result.posisi).toBe('perlu_dicek');
     expect(result.labelPosisi).toBe('Perlu dicek');
   });
+
+  it('rejects a non-positive salary', () => {
+    expect(() =>
+      hitungPatokanUpah({
+        gajiBulanan: 0,
+        jenisPekerjaan: 'penuh_waktu',
+        skalaUsaha: 'menengah_besar',
+        masaKerjaKurang1Tahun: true,
+      })
+    ).toThrow('Gaji bulanan harus berupa angka lebih besar dari nol.');
+  });
 });
 

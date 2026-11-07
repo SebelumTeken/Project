@@ -9,6 +9,15 @@ export interface TemuanItem {
   penjelasan: string;
 }
 
+export interface TandaBahayaItem {
+  id: string;
+  kode: string;
+  label: string;
+  bobot: 'sedang' | 'tinggi';
+  sumber: string;
+  saran_verifikasi: string;
+}
+
 export interface LowonganData {
   teks_terbaca: string;
   nama_perusahaan: string | null;

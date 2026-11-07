@@ -20,6 +20,10 @@ export const UMP_SUMBAR_2026 =
   upahData.find((u) => u.id === 'sumbar-2026')?.nominal ?? 3182955;
 
 export function hitungPatokanUpah(input: HitungUpahInput): HitungUpahResult {
+  if (!Number.isFinite(input.gajiBulanan) || input.gajiBulanan <= 0) {
+    throw new Error('Gaji bulanan harus berupa angka lebih besar dari nol.');
+  }
+
   const nominalPatokan = UMP_SUMBAR_2026;
   const selisih = input.gajiBulanan - nominalPatokan;
 

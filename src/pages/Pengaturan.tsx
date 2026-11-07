@@ -120,7 +120,7 @@ export const Pengaturan: React.FC = () => {
                   htmlFor="api-key-input"
                   className="font-normal text-[14px] leading-5 text-nav"
                 >
-                  Kunci API
+                  Kunci API Groq
                 </label>
                 <span className="font-normal text-[12px] leading-4 text-nav">
                   Hanya di sesi ini
