@@ -4,6 +4,7 @@ import { AppLayout } from '../components/AppLayout';
 import { TextLink } from '../components/TextLink';
 import { useSession } from '../store/session';
 import { PesanLatihan } from '../types';
+import { balasSebagaiHrd, evaluasiLatihan } from '../lib/ai';
 
 const MAX_USER_REPLIES = 6;
 
@@ -18,8 +19,16 @@ const DEMO_HRD_REPLIES = [
 
 export const Latihan: React.FC = () => {
   const navigate = useNavigate();
-  const { lowongan, tawaran, pesanLatihan, setPesanLatihan, loadDemoData } =
-    useSession();
+  const {
+    mode,
+    apiKey,
+    lowongan,
+    tawaran,
+    pesanLatihan,
+    setPesanLatihan,
+    setEvaluasi,
+    loadDemoData,
+  } = useSession();
 
   const chatBottomRef = useRef<HTMLDivElement>(null);
 
@@ -49,6 +58,8 @@ export const Latihan: React.FC = () => {
 
   const [inputMessage, setInputMessage] = useState<string>('');
   const [isTyping, setIsTyping] = useState<boolean>(false);
+  const [errorMessage, setErrorMessage] = useState<string>('');
+  const [isEvaluating, setIsEvaluating] = useState<boolean>(false);
 
   // Count how many replies user has sent
   const userRepliesCount = messages.filter((m) => m.pengirim === 'pengguna').length;
@@ -70,7 +81,7 @@ export const Latihan: React.FC = () => {
     chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isTyping]);
 
-  const handleSendMessage = (e?: React.FormEvent) => {
+  const handleSendMessage = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     const trimmed = inputMessage.trim();
     if (!trimmed || isLimitReached || isTyping) return;
@@ -84,16 +95,23 @@ export const Latihan: React.FC = () => {
     const updated = [...messages, newUserMsg];
     setMessages(updated);
     setInputMessage('');
+    setErrorMessage('');
 
     // Check if limit reached with this new message
     const currentReplies = updated.filter((m) => m.pengirim === 'pengguna').length;
 
     // Trigger HRD response
     setIsTyping(true);
-    setTimeout(() => {
-      // Pick next reply based on reply index
-      const replyIdx = Math.min(currentReplies, DEMO_HRD_REPLIES.length - 1);
-      const hrdReplyText = DEMO_HRD_REPLIES[replyIdx];
+    try {
+      const hrdReplyText =
+        mode === 'ai'
+          ? await balasSebagaiHrd(apiKey, lowongan, tawaran, updated)
+          : await new Promise<string>((resolve) => {
+              setTimeout(() => {
+                const replyIdx = Math.min(currentReplies, DEMO_HRD_REPLIES.length - 1);
+                resolve(DEMO_HRD_REPLIES[replyIdx]);
+              }, 650);
+            });
 
       const newHrdMsg: PesanLatihan = {
         id: `h-${Date.now()}`,
@@ -102,18 +120,48 @@ export const Latihan: React.FC = () => {
       };
 
       setMessages((prev) => [...prev, newHrdMsg]);
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : 'Balasan HRD tidak dapat dimuat. Coba lagi.'
+      );
+    } finally {
       setIsTyping(false);
-    }, 650);
+    }
   };
 
-  const handleSelesai = () => {
-    // Save conversation to session state
+  const handleSelesai = async () => {
+    if (isTyping || isEvaluating) return;
+
+    setErrorMessage('');
     setPesanLatihan(messages);
+
+    if (mode === 'ai') {
+      setIsEvaluating(true);
+
+      try {
+        const hasilEvaluasi = await evaluasiLatihan(apiKey, messages);
+        setEvaluasi(hasilEvaluasi);
+        navigate('/latihan/hasil');
+      } catch (error) {
+        setErrorMessage(
+          error instanceof Error
+            ? error.message
+            : 'Evaluasi latihan tidak dapat dimuat. Coba lagi.'
+        );
+      } finally {
+        setIsEvaluating(false);
+      }
+
+      return;
+    }
+
     navigate('/latihan/hasil');
   };
 
   return (
-    <AppLayout stepText="3 dari 3" isDemo>
+    <AppLayout stepText="3 dari 3" isDemo={mode === 'contoh'}>
       {/* Sub-Header Context Bar */}
       <div className="w-full bg-background border-b border-divider/20">
         <div className="max-w-[1120px] mx-auto px-4 sm:px-10 h-13 py-4 flex items-center justify-between text-sm">
@@ -261,6 +309,12 @@ export const Latihan: React.FC = () => {
 
           {/* Bottom Tranquil Input & Controls */}
           <div className="w-full flex flex-col items-center">
+            {errorMessage && (
+              <p className="mb-4 text-center text-sm text-danger" role="alert">
+                {errorMessage}
+              </p>
+            )}
+
             {/* Capsule Input */}
             <form
               onSubmit={handleSendMessage}
@@ -307,9 +361,10 @@ export const Latihan: React.FC = () => {
               <button
                 type="button"
                 onClick={handleSelesai}
-                className="inline-flex items-center gap-1 font-medium text-[17px] leading-[22px] tracking-[-0.085px] text-accent hover:text-accent-strong transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-sm"
+                disabled={isTyping || isEvaluating}
+                className="inline-flex items-center gap-1 font-medium text-[17px] leading-[22px] tracking-[-0.085px] text-accent hover:text-accent-strong transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-sm disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                <span>Selesai</span>
+                <span>{isEvaluating ? 'Menilai...' : 'Selesai'}</span>
                 <span className="select-none" aria-hidden="true">
                   ›
                 </span>

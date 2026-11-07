@@ -186,7 +186,7 @@ const PRINT_CSS = `
 /* ─────────────────────────── Component ─────────────────────────── */
 export const Ringkasan: React.FC = () => {
   const navigate = useNavigate();
-  const { lowongan, tawaran, evaluasi, loadDemoData, resetSession } = useSession();
+  const { mode, lowongan, tawaran, evaluasi, loadDemoData, resetSession } = useSession();
 
   useEffect(() => {
     if (!lowongan || !tawaran || !evaluasi) {
@@ -203,7 +203,7 @@ export const Ringkasan: React.FC = () => {
     lowonganLevel === 'Tinggi' ? 'text-danger' : lowonganLevel === 'Sedang' ? 'text-warning' : 'text-success';
   const lowonganDotColor =
     lowonganLevel === 'Tinggi' ? 'bg-danger' : lowonganLevel === 'Sedang' ? 'bg-warning' : 'bg-success';
-  const temuanCount = findings.length > 0 ? findings.length : 2;
+  const temuanCount = findings.length;
   const lowonganDesc = findings.length > 0 ? 'Perlu verifikasi legalitas & kontak' : 'Tidak ada temuan berisiko.';
 
   /* ── Tawaran ── */
@@ -234,7 +234,7 @@ export const Ringkasan: React.FC = () => {
   });
 
   return (
-    <AppLayout isDemo>
+    <AppLayout isDemo={mode === 'contoh'}>
       <style>{PRINT_CSS}</style>
 
       {/* ═══════════════════════════

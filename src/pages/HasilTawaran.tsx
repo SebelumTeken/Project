@@ -6,7 +6,7 @@ import { useSession } from '../store/session';
 import { hitungPatokanUpah, UMP_SUMBAR_2026 } from '../lib/upah';
 
 export const HasilTawaran: React.FC = () => {
-  const { tawaran, loadDemoData } = useSession();
+  const { mode, tawaran, loadDemoData } = useSession();
 
   useEffect(() => {
     if (!tawaran) {
@@ -67,7 +67,7 @@ export const HasilTawaran: React.FC = () => {
   );
 
   return (
-    <AppLayout stepText="2 dari 3" isDemo>
+    <AppLayout stepText="2 dari 3" isDemo={mode === 'contoh'}>
       {/* Sub-Header Context Bar */}
       <div className="w-full bg-background border-b border-divider/20">
         <div className="max-w-[1040px] mx-auto px-4 sm:px-10 h-11 flex items-center justify-between text-sm">
@@ -80,7 +80,7 @@ export const HasilTawaran: React.FC = () => {
               aria-hidden="true"
             />
             <span className="font-normal text-[14px] leading-5 select-none">
-              Data contoh
+              {mode === 'contoh' ? 'Data contoh' : 'Analisis AI'}
             </span>
           </div>
         </div>
