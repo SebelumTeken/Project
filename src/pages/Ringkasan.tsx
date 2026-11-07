@@ -283,7 +283,7 @@ export const Ringkasan: React.FC = () => {
             <span className="rks-headline-label font-semibold text-[11px] leading-4 tracking-[0.96px] uppercase text-nav mb-2 select-none">
               RINGKASAN
             </span>
-            <h1 className="rks-headline-h1 font-semibold text-[48px] leading-[52px] tracking-[-1.2px] text-text mb-3">
+            <h1 className="rks-headline-h1 font-semibold text-4xl sm:text-[48px] leading-tight sm:leading-[52px] tracking-[-1.2px] text-text mb-3">
               Ringkasanmu.
             </h1>
             <p className="rks-headline-sub font-normal text-[17px] leading-[26px] tracking-[-0.085px] text-secondary max-w-[560px]">
@@ -294,10 +294,10 @@ export const Ringkasan: React.FC = () => {
           {/* ── 3 Metric Panels ── */}
           <section
             aria-label="Hasil analisis"
-            className="rks-panels flex flex-col sm:flex-row gap-4 mb-10"
+            className="rks-panels flex flex-col md:flex-row gap-4 mb-10"
           >
             {/* Panel 1 – Lowongan */}
-            <article className="rks-panel rks-no-break flex-1 flex flex-col justify-between bg-surface rounded-[28px] p-8 min-h-[200px]">
+            <article className="rks-panel rks-no-break flex-1 flex flex-col justify-between bg-surface rounded-[24px] sm:rounded-[28px] p-6 sm:p-8 md:min-h-[200px]">
               <div>
                 <div className="rks-panel-header flex items-baseline justify-between mb-4">
                   <span className="font-semibold text-[15px] leading-5 tracking-[-0.075px] text-text">
@@ -322,7 +322,7 @@ export const Ringkasan: React.FC = () => {
             </article>
 
             {/* Panel 2 – Tawaran */}
-            <article className="rks-panel rks-no-break flex-1 flex flex-col justify-between bg-surface rounded-[28px] p-8 min-h-[200px]">
+            <article className="rks-panel rks-no-break flex-1 flex flex-col justify-between bg-surface rounded-[24px] sm:rounded-[28px] p-6 sm:p-8 md:min-h-[200px]">
               <div>
                 <div className="rks-panel-header flex items-baseline justify-between mb-4">
                   <span className="font-semibold text-[15px] leading-5 tracking-[-0.075px] text-text">
@@ -344,7 +344,7 @@ export const Ringkasan: React.FC = () => {
             </article>
 
             {/* Panel 3 – Latihan */}
-            <article className="rks-panel rks-no-break flex-1 flex flex-col justify-between bg-surface rounded-[28px] p-8 min-h-[200px]">
+            <article className="rks-panel rks-no-break flex-1 flex flex-col justify-between bg-surface rounded-[24px] sm:rounded-[28px] p-6 sm:p-8 md:min-h-[200px]">
               <div>
                 <div className="rks-panel-header flex items-baseline justify-between mb-4">
                   <span className="font-semibold text-[15px] leading-5 tracking-[-0.075px] text-text">
@@ -386,7 +386,7 @@ export const Ringkasan: React.FC = () => {
               HAL PERLU DIPERHATIKAN
             </span>
 
-            <div className="rks-attention-card rks-no-break bg-surface rounded-2xl px-6 py-2">
+            <div className="rks-attention-card rks-no-break bg-surface rounded-2xl px-4 sm:px-6 py-2">
               <ul className="list-none m-0 p-0">
                 {ATTENTION_ITEMS.map((item, idx) => (
                   <li
@@ -413,7 +413,7 @@ export const Ringkasan: React.FC = () => {
           </section>
 
           {/* ── Actions (screen only) ── */}
-          <div className="no-print w-full max-w-[640px] mx-auto flex items-center justify-between pt-2">
+          <div className="no-print w-full max-w-[640px] mx-auto flex flex-col-reverse sm:flex-row items-center justify-between gap-4 pt-2">
             <button
               type="button"
               onClick={handleMulaiBaru}

@@ -108,9 +108,9 @@ export const HasilTawaran: React.FC = () => {
           </section>
 
           {/* Dual Balanced Analytic Panels (Side by Side Grid, 1040px max, 32px gap) */}
-          <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-8 items-start mb-16">
+          <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-8 items-start mb-12 sm:mb-16">
             {/* Left Panel: Quantitative Difference & Benchmark Gauge */}
-            <article className="w-full min-h-[640px] p-8 sm:p-10 bg-surface rounded-3xl flex flex-col justify-between">
+            <article className="w-full md:min-h-[640px] p-6 sm:p-10 bg-surface rounded-3xl flex flex-col justify-between">
               <div>
                 <span className="font-semibold text-[12px] leading-4 tracking-[1.2px] uppercase text-secondary mb-2 block">
                   SELISIH NOMINAL
@@ -118,7 +118,7 @@ export const HasilTawaran: React.FC = () => {
 
                 <div className="flex items-baseline">
                   <span
-                    className={`font-semibold text-[40px] sm:text-[46px] leading-[52px] tracking-[-1.2px] ${positionColorClass}`}
+                    className={`font-semibold text-[34px] sm:text-[46px] leading-[44px] sm:leading-[52px] break-words tracking-[-1.2px] ${positionColorClass}`}
                   >
                     {formatDifference(calculation.selisih)}
                   </span>
@@ -131,21 +131,21 @@ export const HasilTawaran: React.FC = () => {
                 {/* Comparison Rows */}
                 <div className="mt-9 flex flex-col gap-4">
                   {/* Row 1: Tawaran */}
-                  <div className="w-full h-11 px-4 bg-background rounded-2xl flex items-center justify-between">
+                  <div className="w-full min-h-11 py-2 px-4 bg-background rounded-2xl flex items-center justify-between gap-3">
                     <span className="font-normal text-[16px] leading-[25px] tracking-[-0.051px] text-secondary">
                       Tawaran
                     </span>
-                    <span className="font-semibold text-[20px] leading-7 tracking-[-0.55px] text-text">
+                    <span className="font-semibold text-[17px] sm:text-[20px] leading-7 tracking-[-0.55px] text-text tabular-nums">
                       Rp{activeTawaran.gaji_bulanan.toLocaleString('id-ID')}
                     </span>
                   </div>
 
                   {/* Row 2: Patokan UMP */}
-                  <div className="w-full h-11 px-4 bg-background rounded-2xl flex items-center justify-between">
+                  <div className="w-full min-h-11 py-2 px-4 bg-background rounded-2xl flex items-center justify-between gap-3">
                     <span className="font-normal text-[16px] leading-[25px] tracking-[-0.051px] text-secondary">
                       Patokan UMP
                     </span>
-                    <span className="font-semibold text-[20px] leading-7 tracking-[-0.55px] text-text">
+                    <span className="font-semibold text-[17px] sm:text-[20px] leading-7 tracking-[-0.55px] text-text tabular-nums">
                       Rp{calculation.nominalPatokan.toLocaleString('id-ID')}
                     </span>
                   </div>
@@ -185,10 +185,10 @@ export const HasilTawaran: React.FC = () => {
             </article>
 
             {/* Right Panel: Strategic Clarifications */}
-            <article className="w-full min-h-[640px] p-8 sm:p-10 bg-surface rounded-3xl flex flex-col justify-between">
+            <article className="w-full md:min-h-[640px] p-6 sm:p-10 bg-surface rounded-3xl flex flex-col justify-between">
               <div>
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="font-semibold text-[28px] leading-[34px] tracking-[-0.7px] text-text">
+                  <h2 className="font-semibold text-[24px] sm:text-[28px] leading-[34px] tracking-[-0.7px] text-text">
                     Tanyakan
                   </h2>
                   <span className="font-semibold text-[12px] leading-4 tracking-[1.2px] uppercase text-secondary">

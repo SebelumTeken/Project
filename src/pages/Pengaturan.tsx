@@ -5,15 +5,16 @@ import { useSession } from '../store/session';
 
 export const Pengaturan: React.FC = () => {
   const navigate = useNavigate();
-  const { mode, setMode, apiKey, setApiKey } = useSession();
+  const { setMode, apiKey, setApiKey } = useSession();
 
   // Local draft state — only committed on "Simpan"
   const [draftKey, setDraftKey] = useState<string>(apiKey);
-  const [draftMode, setDraftMode] = useState<typeof mode>(mode);
   const [showKey, setShowKey] = useState<boolean>(false);
 
   const handleSimpan = () => {
-    setMode(draftMode);
+    // Tanpa pilihan mode: AI dipakai otomatis jika kunci API diisi,
+    // jika kosong aplikasi memakai data contoh.
+    setMode(draftKey.trim() ? 'ai' : 'contoh');
     setApiKey(draftKey);
     // Navigate back after saving
     navigate(-1);
@@ -23,8 +24,8 @@ export const Pengaturan: React.FC = () => {
     setDraftKey('');
   };
 
-  // Status: active only when mode is 'ai' and a key is present
-  const isActive = draftMode === 'ai' && draftKey.trim().length > 0;
+  // Status: aktif jika kunci API sudah diisi
+  const isActive = draftKey.trim().length > 0;
 
   return (
     <AppLayout>
@@ -44,73 +45,24 @@ export const Pengaturan: React.FC = () => {
       </div>
 
       {/* Main */}
-      <div className="w-full flex-1 flex flex-col items-center px-4 sm:px-10 pt-16 pb-20 bg-[#F9F9FB]">
+      <div className="w-full flex-1 flex flex-col items-center px-4 sm:px-10 pt-10 sm:pt-16 pb-20 bg-[#F9F9FB]">
         <div className="w-full max-w-[1040px] flex flex-col items-center">
 
           {/* Centered Editorial Header */}
-          <header className="w-full max-w-[640px] flex flex-col items-center text-center mb-16 gap-3 px-5">
+          <header className="w-full max-w-[640px] flex flex-col items-center text-center mb-10 sm:mb-16 gap-3 px-0 sm:px-5">
             <span className="font-semibold text-[12px] leading-4 tracking-[1.2px] uppercase text-nav">
               PENGATURAN
             </span>
-            <h1 className="font-semibold text-[48px] leading-[52px] tracking-[-1.2px] text-text">
+            <h1 className="font-semibold text-4xl sm:text-[48px] leading-tight sm:leading-[52px] tracking-[-1.2px] text-text">
               Pengaturan
             </h1>
             <p className="font-normal text-[14px] leading-5 text-nav max-w-[420px]">
-              Pilih mode analisis dan masukkan kunci API untuk mengaktifkan evaluasi berbasis AI.
+              Masukkan kunci API Groq agar poster lowongan dianalisis dengan AI.
             </p>
           </header>
 
           {/* Settings Form Column */}
-          <div className="w-full max-w-[560px] flex flex-col gap-10 px-5">
-
-            {/* ── Section 1: Mode Segmented Control ── */}
-            <section aria-labelledby="mode-label">
-              <label
-                id="mode-label"
-                className="block font-normal text-[14px] leading-5 text-nav mb-2.5"
-              >
-                Mode Analisis
-              </label>
-
-              {/* Tablist pill */}
-              <div
-                role="tablist"
-                aria-label="Mode evaluasi dokumen"
-                className="flex items-center p-1.5 gap-1 w-full bg-surface rounded-full"
-              >
-                <button
-                  role="tab"
-                  aria-selected={draftMode === 'contoh'}
-                  type="button"
-                  onClick={() => setDraftMode('contoh')}
-                  className={`flex-1 h-[42px] flex items-center justify-center rounded-full font-medium text-[17px] leading-[22px] tracking-[-0.085px] transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
-                    draftMode === 'contoh'
-                      ? 'bg-background shadow-[0_1px_4px_rgba(0,0,0,0.04)] text-text'
-                      : 'text-nav hover:text-text'
-                  }`}
-                >
-                  Contoh
-                </button>
-                <button
-                  role="tab"
-                  aria-selected={draftMode === 'ai'}
-                  type="button"
-                  onClick={() => setDraftMode('ai')}
-                  className={`flex-1 h-[42px] flex items-center justify-center rounded-full font-medium text-[17px] leading-[22px] tracking-[-0.085px] transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
-                    draftMode === 'ai'
-                      ? 'bg-background shadow-[0_1px_4px_rgba(0,0,0,0.04)] text-text'
-                      : 'text-nav hover:text-text'
-                  }`}
-                >
-                  AI
-                </button>
-              </div>
-
-              {/* Mode description */}
-              <p className="mt-1 font-normal text-[12px] leading-4 text-nav">
-                Mode AI mengevaluasi dokumen naskah kontrak kerja aktual secara mendalam. Mode Contoh memuat berkas simulasi statis.
-              </p>
-            </section>
+          <div className="w-full max-w-[560px] flex flex-col gap-8 sm:gap-10 px-0 sm:px-5">
 
             {/* ── Section 2: API Key Password Input ── */}
             <section aria-labelledby="apikey-label">
@@ -204,12 +156,12 @@ export const Pengaturan: React.FC = () => {
             </section>
 
             {/* ── Section 4: Actions Row ── */}
-            <div className="flex items-center justify-between w-full pt-2">
+            <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-4 w-full pt-2">
               {/* Test connection link */}
               <button
                 type="button"
                 disabled={!isActive}
-                className="flex items-center gap-1.5 font-medium text-[14px] leading-5 tracking-[-0.07px] text-accent-strong hover:underline disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-sm"
+                className="flex items-center justify-center gap-1.5 font-medium text-[14px] leading-5 tracking-[-0.07px] text-accent-strong hover:underline disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-sm"
                 // TODO(ai): trigger real API connectivity test
               >
                 Uji koneksi

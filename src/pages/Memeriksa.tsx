@@ -110,7 +110,7 @@ export const Memeriksa: React.FC = () => {
         </div>
       </div>
 
-      <div className="w-full flex-1 flex flex-col items-center justify-center px-4 sm:px-10 py-16 md:py-24">
+      <div className="w-full flex-1 flex flex-col items-center justify-center px-4 sm:px-10 py-10 sm:py-16 md:py-24">
         {status === 'running' ? (
           <div className="w-full max-w-[680px] flex flex-col items-center text-center">
             {/* Heading 1 */}
@@ -193,7 +193,7 @@ export const Memeriksa: React.FC = () => {
             </div>
 
             {/* Bottom Info Box */}
-            <div className="mt-24 pt-8 w-full max-w-[480px] flex flex-col items-center text-center">
+            <div className="mt-16 sm:mt-24 pt-8 w-full max-w-[480px] flex flex-col items-center text-center">
               <span className="font-semibold text-[12px] leading-4 tracking-[1.2px] uppercase text-secondary">
                 DIBANTU AI
               </span>
@@ -212,7 +212,7 @@ export const Memeriksa: React.FC = () => {
               Koneksi ke AI bermasalah.
             </p>
 
-            <div className="mt-10 flex flex-row items-center justify-center gap-6">
+            <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6">
               <Button onClick={handleCobaLagi}>Coba lagi</Button>
               <TextLink onClick={handlePakaiContoh}>Pakai contoh</TextLink>
             </div>
