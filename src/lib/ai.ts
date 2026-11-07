@@ -1,4 +1,5 @@
-import { buatDataLowongan } from './validasi';
+import { analisisKeLowongan } from './validasi';
+import { nominalBulananTertinggi } from './deteksiLowongan';
 import { AiEvaluasiLatihanSchema, AiLowonganAnalysisSchema } from './schemas';
 import {
   buatPesanPercakapan,
@@ -112,8 +113,10 @@ export function normalisasiAnalisis(data: unknown): unknown {
   const salinan: Record<string, unknown> = { ...(data as Record<string, unknown>) };
 
   if (typeof salinan.gaji_tertulis === 'string') {
-    const angka = salinan.gaji_tertulis.replace(/\D/g, '');
-    salinan.gaji_tertulis = angka ? Number(angka) : null;
+    // "Rp5.000.000 - Rp15.000.000" → 15000000, "8 juta" → 8000000, "Rp150.000/hari" → setara per bulan.
+    const teksGaji = salinan.gaji_tertulis.trim();
+    const nominal = nominalBulananTertinggi(/^rp/i.test(teksGaji) ? teksGaji : `Rp${teksGaji}`);
+    salinan.gaji_tertulis = nominal;
   }
   if (salinan.temuan === undefined || salinan.temuan === null) {
     salinan.temuan = [];
@@ -283,7 +286,15 @@ export async function analisisLowongan(
     );
   }
 
-  return { ...buatDataLowongan(hasil.data, gambarData), sumber: 'ai' };
+  const { data, diagnosis } = analisisKeLowongan(hasil.data, gambarData);
+  console.info(LOG, 'analisis lowongan: temuan', {
+    tingkat: data.tingkat_perhatian,
+    dariAi: diagnosis.dariAi,
+    dariAturan: diagnosis.dariAturan,
+    dibuang: diagnosis.dibuang,
+  });
+
+  return { ...data, sumber: 'ai' };
 }
 
 // ── Latihan negosiasi: versi dari master, tidak diubah ──

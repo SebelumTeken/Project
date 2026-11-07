@@ -59,6 +59,14 @@ describe('normalisasiAnalisis', () => {
       ringkasan: '',
     });
   });
+
+  it('membaca rentang gaji sebagai batas atas, bukan angka yang digabung', () => {
+    const hasil = normalisasiAnalisis({
+      teks_terbaca: 'x',
+      gaji_tertulis: 'Rp5.000.000 - Rp15.000.000',
+    }) as { gaji_tertulis: number };
+    expect(hasil.gaji_tertulis).toBe(15000000);
+  });
 });
 
 describe('pesanErrorHttp', () => {
@@ -98,8 +106,47 @@ describe('analisisLowongan', () => {
 
     expect(hasil.sumber).toBe('ai');
     expect(hasil.gaji_tertulis).toBe(8000000);
-    expect(hasil.temuan).toHaveLength(1);
+    // Temuan AI didahulukan, lalu aturan menambahkan "Daftar via WhatsApp".
+    expect(hasil.temuan.map((t) => t.kode_tanda)).toEqual(['biaya_di_awal', 'pesan_pribadi']);
     expect(hasil.tingkat_perhatian).toBe('tinggi');
+  });
+
+  it('tetap menandai poster berisiko walau AI tidak melaporkan temuan', async () => {
+    fetchMock.mockResolvedValue(
+      responsGroq(
+        JSON.stringify({
+          ...ANALISIS_VALID,
+          teks_terbaca: 'Lowongan Admin. Wajib bayar biaya pendaftaran Rp200.000. Kirim CV ke lokerku@gmail.com',
+          temuan: [],
+        })
+      )
+    );
+
+    const hasil = await analisisLowongan('kunci-uji', GAMBAR);
+
+    expect(hasil.temuan.map((t) => t.kode_tanda)).toEqual(['biaya_di_awal', 'email_gratis']);
+    expect(hasil.tingkat_perhatian).toBe('tinggi');
+  });
+
+  it('tidak membuang temuan AI yang kutipannya beda spasi atau tanda baca', async () => {
+    fetchMock.mockResolvedValue(
+      responsGroq(
+        JSON.stringify({
+          ...ANALISIS_VALID,
+          temuan: [
+            { kode_tanda: 'biaya_di_awal', kutipan: 'biaya seragam Rp 150.000,-', penjelasan: 'Ada biaya.' },
+          ],
+        })
+      )
+    );
+
+    const hasil = await analisisLowongan('kunci-uji', GAMBAR);
+
+    expect(hasil.temuan[0]).toMatchObject({
+      kode_tanda: 'biaya_di_awal',
+      kutipan: 'Biaya seragam Rp150.000',
+      penjelasan: 'Ada biaya.',
+    });
   });
 
   it('menampilkan pesan kunci salah untuk HTTP 401', async () => {

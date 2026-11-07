@@ -38,6 +38,22 @@
     "bobot": "sedang",
     "sumber": "Jobstreet",
     "saran_verifikasi": "Verifikasi domain email atau situs resmi perusahaan."
+  },
+  {
+    "id": "tb-6",
+    "kode": "kanal_tidak_jelas",
+    "label": "Tidak ada kanal resmi untuk melamar",
+    "bobot": "sedang",
+    "sumber": "Perlu dilengkapi tim (panduan verifikasi lowongan)",
+    "saran_verifikasi": "Cari lowongan yang sama di situs karier atau akun resmi perusahaan sebelum menghubungi siapa pun."
+  },
+  {
+    "id": "tb-7",
+    "kode": "info_terlalu_umum",
+    "label": "Informasi lowongan terlalu umum",
+    "bobot": "sedang",
+    "sumber": "Perlu dilengkapi tim (panduan verifikasi lowongan)",
+    "saran_verifikasi": "Tanyakan posisi, tanggal pendaftaran, dan lokasi kerja yang pasti, lalu cocokkan dengan pengumuman resmi perusahaan."
   }
 ]
 

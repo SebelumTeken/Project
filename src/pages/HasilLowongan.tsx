@@ -5,6 +5,12 @@ import { TextLink } from '../components/TextLink';
 import { BelumAdaData } from '../components/BelumAdaData';
 import { useSession } from '../store/session';
 import { TemuanItem } from '../types';
+import tandaBahayaData from '../data/tanda-bahaya.json';
+
+/** Saran verifikasi per kode tanda bahaya, dari tanda-bahaya.json. */
+const SARAN_VERIFIKASI: Record<string, string> = Object.fromEntries(
+  tandaBahayaData.map((tanda) => [tanda.kode, tanda.saran_verifikasi])
+);
 
 export const HasilLowongan: React.FC = () => {
   const { mode, lowongan, lengkapiDataContoh } = useSession();
@@ -74,12 +80,16 @@ export const HasilLowongan: React.FC = () => {
 
     if (matches.length === 0) return fullText;
 
-    matches.sort((a, b) => a.start - b.start);
+    // Urut dari awal teks; jika posisinya sama, bobot tinggi didahulukan.
+    matches.sort((a, b) => a.start - b.start || (a.bobot === 'tinggi' ? -1 : 1));
 
     const parts: React.ReactNode[] = [];
     let lastIndex = 0;
 
     matches.forEach((m, i) => {
+      // Dua temuan bisa menunjuk kalimat yang sama; bagian yang tumpang tindih dilewati
+      // supaya teks tidak tertulis dua kali.
+      if (m.start < lastIndex) return;
       if (m.start > lastIndex) {
         parts.push(fullText.substring(lastIndex, m.start));
       }
@@ -150,7 +160,7 @@ export const HasilLowongan: React.FC = () => {
                 <h2 className="font-semibold text-[12px] leading-4 tracking-[0.6px] uppercase text-secondary mb-6">
                   TEKS POSTER
                 </h2>
-                <p className="font-semibold text-[20px] sm:text-[22px] leading-[34px] sm:leading-[36px] tracking-[-0.22px] text-text">
+                <p className="font-semibold text-[20px] sm:text-[22px] leading-[34px] sm:leading-[36px] tracking-[-0.22px] text-text whitespace-pre-line break-words">
                   {activeLowongan.teks_terbaca.trim()
                     ? renderHighlightedText(activeLowongan.teks_terbaca, findings)
                     : 'Teks poster tidak terbaca. Coba unggah gambar yang lebih jelas.'}
@@ -202,6 +212,11 @@ export const HasilLowongan: React.FC = () => {
                         <p className="pl-3.5 font-normal text-[17px] leading-[25px] tracking-[-0.051px] text-secondary">
                           {item.penjelasan}
                         </p>
+                        {SARAN_VERIFIKASI[item.kode_tanda] && (
+                          <p className="pl-3.5 font-normal text-[14px] leading-5 text-secondary">
+                            Cara cek: {SARAN_VERIFIKASI[item.kode_tanda]}
+                          </p>
+                        )}
                       </div>
                     ))}
                   </div>
